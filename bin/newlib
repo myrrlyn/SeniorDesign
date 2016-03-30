@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+IFS=$'\n\t'
+
+for ARG in $@ ; do
+	mkdir -p lib/${ARG}/{doc,src}
+	touch lib/${ARG}/doc/${ARG}.md
+	touch lib/${ARG}/src/${ARG}.{c,h}pp
+done

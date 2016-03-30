@@ -6,9 +6,14 @@
  * loop() forever.
  */
 
+#include <Utility.hpp>
+
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Arduino online");
+	iopair_t comm = { .tx = 3, .rx = 2 };
+	pinsMode(comm);
+	digitalWrite(comm.tx, HIGH);
 }
 
 void loop() {
