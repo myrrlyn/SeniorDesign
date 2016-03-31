@@ -8,14 +8,17 @@
 
 #include <Utility.hpp>
 
+#include "Lookout.hpp"
+
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Arduino online");
-	iopair_t comm = { .tx = 3, .rx = 2 };
-	pinsMode(comm);
-	digitalWrite(comm.tx, HIGH);
+	for (uint8_t idx = 0; idx < 12; ++idx) {
+		Serial.println((uint32_t)us_all[idx]);
+	}
 }
 
 void loop() {
+	us_scan_all();
 	delay(1000);
 }
