@@ -13,7 +13,7 @@ code.
 This is an alias for `uint8_t` and helps distinguish port numbers, which are
 numeric literals on Arduino, from regular integral data.
 
-```c
+```cpp
 gpio_t example_pin = 40;
 ```
 
@@ -24,7 +24,7 @@ keeping track of port assignments for a peripheral that uses two ports for
 duplex communication. The two elements are named `tx` and `rx`, and indicate the
 signal direction relative to the Arduino. `tx` is outbound, `rx` is inbound.
 
-```c
+```cpp
 iopair_t example_pair = { .tx = 2, .rx = 3 };
 ```
 
@@ -37,7 +37,7 @@ it here to emphasize that this is simply a wrapper around standard Arduino
 functionality. This takes an `iopair_t` struct and sets the appropriate
 `pinMode` for each.
 
-```c
+```cpp
 iopairMode(example_pair);
 //  pinMode(example_pair.tx, OUTPUT);
 //  pinMode(example_pair.rx, INPUT);
@@ -48,7 +48,7 @@ iopairMode(example_pair);
 Transforms two `uint8_t` numbers into a SIGNED `int16_t` number. Parameters are
 in little-endian order: `l` is the low half, `h` is the high half.
 
-```c
+```cpp
 uint8x2_to_int16(0xCD/*205*/, 0xAB/*171*/);
 //  Returns 0xABCD (-11_213)
 ```
@@ -60,7 +60,7 @@ accepts the ASCII characters '0' through '9', 'A' through 'F', and 'a' through
 'f'. Any other characters return 0. There is no error signal; input checking is
 on the user.
 
-```c
+```cpp
 parse_hex('6');
 //  Returns 0x06 (6)
 parse_hex('A');
@@ -77,7 +77,7 @@ Parses two alphanumeric characters into the number they represent. This has the
 same behavior as above: only 0-9, A-F, and a-f are permitted, and errors return
 0 in their nibble with no signal. Parameters are in little-endian order.
 
-```c
+```cpp
 parse_hex('c', '4');
 //  Returns 0x4C
 parse_hex('7', 'O'); // Note that is upper-case Oscar, not zero
@@ -91,7 +91,7 @@ parse_hex('7', 'O'); // Note that is upper-case Oscar, not zero
 Prints the `sizeof` its argument. Requires `Serial` to have been initialized.
 Conditional upon `#ifdef DEVEL`.
 
-```c
+```cpp
 #define DEVEL
 DEBUG_SIZE_1(gpio_t);
 //  Prints '1'
@@ -106,7 +106,7 @@ Prints the difference between the `sizeof` x and `sizeof` y. Useful for checking
 the actual size of a wrapper class without the object it is wrapping. Requires
 `Serial` to have been initialized. Conditional upon `#ifdef DEVEL`.
 
-```c
+```cpp
 #define DEVEL
 DEBUG_SIZE_2(iopair_t, gpio_t);
 //  Prints '1'

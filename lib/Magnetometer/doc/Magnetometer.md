@@ -95,28 +95,28 @@ computing compass direction.
 
 ###### Constructor
 
-```c
+```cpp
 Magnetometer::Magnetometer(void);
 ```
 
 Constructs a new `Magnetometer` instance. This does NOT initialize the Wire bus
 for use, as that must be done at runtime.
 
-```c
+```cpp
 Magnetometer mag;
 mag_err_t mag_err;
 ```
 
 ###### Initializer
 
-```c
+```cpp
 mag_err_t Magnetometer::begin(void);
 ```
 
 This function must be called during `setup()` and marks the instance as fully
 initialized. All instance methods will fail until this is called successfully.
 
-```c
+```cpp
 mag_err = mag.begin();
 //  Will return failure if I2C cannot be properly initialized or if the device
 //  responds inappropriately.
@@ -124,21 +124,21 @@ mag_err = mag.begin();
 
 ###### Gain Setting
 
-```c
+```cpp
 mag_err_t Magnetometer::set_gain(mag_gain_t gain);
 ```
 
 Sets the gain level of the magnetometer and performs a throwaway read as
 required by hardware.
 
-```c
+```cpp
 mag_err = mag.set_gain(mag_gain_0820);
 //  Should pretty much always return success.
 ```
 
 ###### Reading Raw Bits
 
-```c
+```cpp
 mag_err_t Magnetometer::read_raw(int16_t* x, int16_t* y, int16_t* z);
 ```
 
@@ -147,7 +147,7 @@ are -4096, then that sensor was overloaded and the gain should be adjusted
 before reading again. The measured values are scaled by the gain setting, so raw
 reads will need to normalize the results themselves.
 
-```c
+```cpp
 int16_t rx, ry, rz;
 mag_err = mag.read_raw(&rx, &ry, &rz);
 //  Should return success in almost all cases.
@@ -156,7 +156,7 @@ mag_err = mag.read_raw(&rx, &ry, &rz);
 
 ###### Reading Gauss
 
-```c
+```cpp
 mag_err_t Magnetometer::read_gauss(double* x, double* y, double* z);
 ```
 
@@ -164,7 +164,7 @@ Retrieves the raw measurements from the device and then converts to
 floating-point according to the gain value. This performs the normalization
 required for raw data processing.
 
-```c
+```cpp
 double dx, dy, dz;
 mag_err = mag.read_gauss(&dx, &dy, &dz);
 //  Should return success in almost all cases.
@@ -175,7 +175,7 @@ mag_err = mag.read_gauss(&dx, &dy, &dz);
 
 ###### Compass
 
-```c
+```cpp
 mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes = mag_axes_yx);
 ```
 
@@ -184,7 +184,7 @@ This function takes an optional value that allows for the device to be
 positioned in one of six orientations for measurement. If the positive halves of
 your chosen measurement axes do not point north and east, you're on your own.
 
-```c
+```cpp
 double nav;
 mag_err = mag.compass(&nav);
 //  Returns success unless the device cannot respond
@@ -201,14 +201,14 @@ safe means of communicating with the device.
 
 ###### Reader
 
-```c
+```cpp
 mag_err_t Magnetometer::i2c_read(mag_reg_t r, uint8_t* d, uint8_t n = 1);
 ```
 
 Reads `n` number of bytes from register `r` into storage `*d`. Defaults to
 reading only a single byte, to try and prevent idiocy such as in the example.
 
-```c
+```cpp
 uint8_t store;
 mag_err = mag.i2c_read_bytes(mag_reg_data, &store, 6);
 //  This is the magic part of read_raw()

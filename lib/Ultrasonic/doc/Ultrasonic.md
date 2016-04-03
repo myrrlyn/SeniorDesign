@@ -50,7 +50,7 @@ methods. When inactive, the access function does nothing and returns `UINT_MAX`.
 
 ###### Constructor
 
-```c
+```cpp
 Ultrasonic::Ultrasonic(iopair_t pair);
 ```
 
@@ -60,7 +60,7 @@ it in the stack. Be careful with this).
 
 ###### Status
 
-```c
+```cpp
 void Ultrasonic::status(bool);  //  Setter
 bool Ultrasonic::status(void);  //  Getter
 ```
@@ -70,7 +70,7 @@ Enables and disables the sensor. Defaults to enabled. Setting to false causes
 
 ###### Reader
 
-```c
+```cpp
 uint32_t Ultrasonic::measure(void);
 ```
 
@@ -83,7 +83,7 @@ time-critical code.
 
 #### Example
 
-```c
+```cpp
 #include <Utility.hpp>
 #include <Ultrasonic.hpp>
 
