@@ -75,12 +75,13 @@ parse_hex('~');
 
 Parses two alphanumeric characters into the number they represent. This has the
 same behavior as above: only 0-9, A-F, and a-f are permitted, and errors return
-0 in their nibble with no signal. Parameters are in little-endian order.
+0 in their nibble with no signal. Parameters are in big-endian order, so they
+match up with how characters are read out of left-to-right text.
 
 ```cpp
-parse_hex('c', '4');
+parse_hex('4', 'c');
 //  Returns 0x4C
-parse_hex('7', 'O'); // Note that is upper-case Oscar, not zero
+parse_hex('O', '7'); // Note that is upper-case Oscar, not zero
 //  Returns 0x07
 ```
 

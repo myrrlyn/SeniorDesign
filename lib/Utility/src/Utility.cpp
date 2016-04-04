@@ -26,7 +26,7 @@ uint8_t parse_hex(char c) {
 	return tmp;
 }
 
-uint8_t parse_hex(char l, char h) {
+uint8_t parse_hex(char h, char l) {
 //  Most multi-register variables have hardware protections to make atomic reads
 //  in little-endian order (i.e. once the low register is read, no register can
 //  be written until the high register is read). This code ensures that reads
