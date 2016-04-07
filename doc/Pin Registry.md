@@ -31,15 +31,15 @@ This lists each device and which pins it occupies.
 
 ### Motors
 
-- Left Forward: 5
-- Left Reverse: 6
-- Right Forward: 9
-- Right Reverse: 10
+- Left Speed: 10
+- Left Direction: 8
+- Right Speed: 11
+- Right Direction: 9
 
 ### Switches
 
-- Stop/Run: 2
-- Destination Selector: 3(, 4)
+- Stop/Run: ~RESET
+- Destination Selector: 2
 
 ### Tachometer
 
@@ -54,16 +54,17 @@ This lists each device and which pins it occupies.
 
 	D00
 	D01
-	D02 - Switch (Stop/Run)
-	D03 - Switch (Destination)
-	D04 - Switch (Destination) (possibly)
-	D05 - Motor Left Forward
-	D06 - Motor Left Reverse
+	D02 - Destination
+	D03
+	D04
+	D05
+	D06
 	D07
-	D08
-	D09 - Motor Right Forward
-	D10 - Motor Right Reverse
-	D11
+
+	D08 - Motor Left Direction
+	D09 - Motor Right Direction
+	D10 - Motor Left Speed
+	D11 - Motor Right Speed
 	D12 - Tachometer Left
 	D13 - Tachometer Right
 	D14 - TX3
@@ -74,6 +75,7 @@ This lists each device and which pins it occupies.
 	D19 - RX1 (GPS (optional))
 	D20 - I2C bus (Compass)
 	D21 - I2C bus (Compass)
+
 	D22 - GPS (Enable)
 	D23 - GPS (Fix)
 	D24 - Ultrasonic Sensor
@@ -115,6 +117,7 @@ This lists each device and which pins it occupies.
 	A05
 	A06
 	A07
+
 	A08
 	A09
 	A10
@@ -123,3 +126,8 @@ This lists each device and which pins it occupies.
 	A13
 	A14
 	A15
+
+	IOREF
+	~RESET
+	VIN
+	AREF

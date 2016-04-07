@@ -1,4 +1,8 @@
+#include <RingBuffer.hpp>
 #include <Ultrasonic.hpp>
+
+#define US_HEAD 0
+#define US_TAIL 6
 
 Ultrasonic us00({ .tx = 24, .rx = 25 });
 Ultrasonic us01({ .tx = 26, .rx = 27 });
@@ -14,30 +18,57 @@ Ultrasonic us09({ .tx = 44, .rx = 45 });
 Ultrasonic us10({ .tx = 46, .rx = 47 });
 Ultrasonic us11({ .tx = 48, .rx = 49 });
 
-
-Ultrasonic* us_all[12] = {
+Ultrasonic* us_all[] = {
 	&us00, &us01, &us02, &us03, &us04, &us05,
 	&us06, &us07, &us08, &us09, &us10, &us11,
 };
-Ultrasonic* us_head[1] = { &us00, };
-Ultrasonic* us_tail[1] = { &us06, };
+
+RingBuffer_us head(true);
 
 void us_debug(uint8_t num) {
 	Serial.print("Sensor #");
 	Serial.print(num + 1);
 	Serial.print(": ");
-	Serial.println(us_all[num]->measure());
+	Serial.print(us_all[num]->measure());
+	Serial.print(" ");
+	Serial.print(us_all[num]->measure_inches());
+	Serial.println(" inches.");
 }
 
 void us_scan_head() {
-	for (uint8_t idx = 0; idx < 6; ++idx) {
-		us_debug(idx);
+	register bool tmp;
+	for (uint16_t idx = 0; idx < 6; ++idx) {
+		uint32_t distance = us_all[US_HEAD + idx]->measure();
+		Serial.print("Sensor #");
+		Serial.print(idx + 1);
+		Serial.print(": ");
+		Serial.print(distance);
+		Serial.println(distance >= 5000 ? " (good)" : " (bad)");
+		if (distance < 5000) {
+			head.write(false);
+		}
+		else {
+			head.write(true);
+		}
+		tmp = head.read_all('&');
+		Serial.print("Buffer state: ");
+		//  These need replaced with calls to the pilot.
+		if (tmp) {
+			Serial.println("Running");
+			analogWrite(10, 256 / 2);
+			analogWrite(11, 256 / 2);
+		}
+		else {
+			Serial.println("Stopped");
+			digitalWrite(10, LOW);
+			digitalWrite(11, LOW);
+		}
 	}
 }
 
 void us_scan_tail() {
-	for (uint8_t idx = 6; idx < 12; ++idx) {
-		us_debug(idx);
+	for (uint8_t idx = 0; idx < 6; ++idx) {
+		us_debug(US_TAIL + idx);
 	}
 }
 

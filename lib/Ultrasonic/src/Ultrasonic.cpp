@@ -1,5 +1,8 @@
 #include "Ultrasonic.hpp"
 
+//  Magic number. Refine with trial and error.
+#define ULTRASONIC_MAGIC_INCH 74
+
 Ultrasonic::Ultrasonic(iopair_t pins) {
 	_pins = pins;
 	pinsMode(pins);
@@ -20,8 +23,13 @@ uint32_t Ultrasonic::measure() {
 		return pulseIn(_pins.rx, HIGH);
 	}
 	else {
-		return 0x00000000;
+		return 0xFFFFFFFF;
 	}
+}
+
+uint8_t Ultrasonic::measure_inches() {
+	uint32_t raw = measure();
+	return raw / ULTRASONIC_MAGIC_INCH;
 }
 
 void Ultrasonic::status(bool status) {
@@ -31,3 +39,5 @@ void Ultrasonic::status(bool status) {
 bool Ultrasonic::status() {
 	return _status;
 }
+
+#undef ULTRASONIC_MAGIC_INCH

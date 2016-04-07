@@ -14,18 +14,21 @@
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Arduino online");
-	compass.begin();
-	for (uint8_t idx = 0; idx < 12; ++idx) {
-		Serial.println((uint32_t)us_all[idx]);
-	}
+
+	pinMode(2, INPUT);
+
+	pinMode(10, OUTPUT);
+	pinMode(11, OUTPUT);
+
+	digitalWrite(10, HIGH);
+	digitalWrite(11, HIGH);
+	delay(2500);
 }
 
-double heading;
 
 void loop() {
-	us_scan_all();
-	Serial.print("Compass: ");
-	compass.compass(&heading);
-	Serial.println(heading);
+	Serial.print("Pin 2: ");
+	Serial.println(digitalRead(2));
+	us_scan_head();
 	delay(1000);
 }
