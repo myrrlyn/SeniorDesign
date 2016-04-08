@@ -34,6 +34,7 @@ of a type name.
 Established classes:
 
 - `RingBuffer_us` -- Used for the Ultrasonic sensors. Each has 6 storage.
+- `RingBuffer_gps` -- Used for the GPS. Has 96 storage.
 
 ###### Constructor
 

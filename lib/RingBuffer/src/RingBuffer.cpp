@@ -61,12 +61,68 @@ void RingBuffer_us::set_overwrite(bool state) {
 
 bool RingBuffer_us::is_full() {
 	//  head points to [0] and tail points to [len - 1], or [*][tail][head][*]
-	if (tail + 1 == head || (head == buf && tail == buf + len - 1)) {
+	if (tail + 1 == head || (head == buf && tail == buf + len)) {
 		return true;
 	}
 	return false;
 }
 
 bool RingBuffer_us::is_empty() {
+	return (head == tail);
+}
+
+RingBuffer_gps::RingBuffer_gps(bool state) {
+	head = buf;
+	tail = buf;
+	overwrite = state;
+	wipe();
+}
+
+void RingBuffer_gps::write(char val) {
+	*tail = val;
+	if (overwrite || !is_full()) {
+		++tail;
+		if (tail >= buf + len) {
+			tail = buf;
+		}
+	}
+}
+
+char RingBuffer_gps::read() {
+	if (!is_empty()) {
+		char tmp = *head;
+		++head;
+		if (head >= buf + len) {
+			head = buf;
+		}
+		return tmp;
+	}
+	return 0x00;
+}
+
+char* RingBuffer_gps::read_all() {
+	return head;
+}
+
+void RingBuffer_gps::set_overwrite(bool state) {
+	overwrite = state;
+}
+
+void RingBuffer_gps::wipe() {
+	for (uint8_t idx = 0; idx < len; ++idx) {
+		buf[idx] = 0x00;
+	}
+	head = buf;
+	tail = buf;
+}
+
+bool RingBuffer_gps::is_full() {
+	if (tail + 1 == head || (head == buf && tail == buf + len)) {
+		return true;
+	}
+	return false;
+}
+
+bool RingBuffer_gps::is_empty() {
 	return (head == tail);
 }

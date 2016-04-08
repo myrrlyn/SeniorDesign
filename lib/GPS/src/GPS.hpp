@@ -4,6 +4,8 @@
 #include <HardwareSerial.h>
 #include <SoftwareSerial.h>
 
+#include <RingBuffer.hpp>
+
 /*  These items are defined as preprocessor macros, rather than as C items, to
  *  ensure they are not present in the compiled result.
  */
@@ -68,6 +70,9 @@ typedef enum : uint8_t {
 	gps_err_nocsum  = 0xFD,
 	gps_err_nofix   = 0xFC,
 	gps_err_noparse = 0xFB,
+	gps_err_nochar  = 0xFA,
+	gps_err_timeout = 0xEF,
+	gps_msg_ready   = 0x9F,
 } gps_err_t;
 
 typedef struct {
@@ -106,8 +111,16 @@ public:
 	GPS(HardwareSerial* comm);
 	GPS(SoftwareSerial* comm);
 	gps_err_t begin(uint16_t baud);
+	bool available(void);
 	char read(void);
+	gps_err_t store(char inbound);
+	bool sentence_ready(void);
+	char* latest_sentence(void);
 	gps_err_t parse(char* sentence);
+
+	gps_err_t command(const char* sentence);
+	gps_err_t await_response(const char* sentence, uint8_t timeout = 5);
+	gps_err_t pause(bool status);
 
 	void debug(void);
 
@@ -125,6 +138,9 @@ private:
 	HardwareSerial* _hwser = NULL;
 	SoftwareSerial* _swser = NULL;
 
+	RingBuffer_gps buf_0;
+	RingBuffer_gps buf_1;
+
 	gps_time_t timestamp;
 	gps_coord_t location;
 	double hdop;
@@ -133,6 +149,11 @@ private:
 	gps_velocity_t velocity;
 	gps_fix_t fix_info;
 	uint8_t satellite_count;
+
+	bool is_asleep = false;
+	bool is_sentence_ready = false;
+	RingBuffer_gps* buf_active = &buf_0;
+	RingBuffer_gps* buf_second = &buf_1;
 };
 
 #endif//__APPAYNE_SENIORDESIGN_GPS_H

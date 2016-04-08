@@ -20,11 +20,69 @@ gps_err_t GPS::begin(uint16_t baud) {
 	else {
 		return gps_err_nocomm;
 	}
+
 	return gps_err_none;
 }
 
+bool GPS::available() {
+	if (_hwser != NULL) {
+		return _hwser->available();
+	}
+	else if (_swser != NULL) {
+		return _swser->available();
+	}
+	else {
+		return false;
+	}
+}
+
 char GPS::read() {
-	return _hwser->read();
+	register char c = 0x00;
+	if (is_asleep) {
+		return c;
+	}
+	if (_hwser != NULL) {
+		c = _hwser->read();
+	}
+	else if (_swser != NULL) {
+		c = _swser->read();
+	}
+	return c;
+}
+
+gps_err_t GPS::store(char inbound) {
+	if (inbound == -1) {
+		return gps_err_nochar;
+	}
+	//  If the buffer is full (['*']['A']['B'][0x00]), the last cell (['B'])
+	//  will silently be overwritten until the stream stops. Since we can't
+	//  allocate extra memory on the fly, we give up on that sentence and wait
+	//  for a NULL. The parser will catch it and throw it away.
+	buf_active->write(inbound);
+	// UDR0 = inbound;
+	if (inbound == '\n') {
+		//  Sentence was completed; swap buffer roles and set flag.
+		// Serial.print((uint16_t)buf_active, HEX);
+		// Serial.print(":\t");
+		// Serial.println(buf_active->read_all());
+		RingBuffer_gps* tmp = buf_active;
+		buf_active = buf_second;
+		buf_second = tmp;
+		is_sentence_ready = true;
+		buf_active->wipe();
+		return gps_msg_ready;
+	}
+
+	return gps_err_none;
+}
+
+bool GPS::sentence_ready() {
+	return is_sentence_ready;
+}
+
+char* GPS::latest_sentence() {
+	is_sentence_ready = false;
+	return buf_second->read_all();
 }
 
 gps_err_t GPS::parse(char* sentence) {
@@ -43,7 +101,70 @@ gps_err_t GPS::parse(char* sentence) {
 	return gps_err_noparse;
 }
 
-//  Must take a string ending in \r\n\0
+gps_err_t GPS::command(const char* sentence) {
+	if (_hwser != NULL) {
+		_hwser->println(sentence);
+	}
+	else if (_swser != NULL) {
+		_swser->println(sentence);
+	}
+	else {
+		return gps_err_nocomm;
+	}
+	return gps_err_none;
+}
+
+gps_err_t GPS::await_response(const char *sentence, uint8_t timeout) {
+	//  This is being used as a linear buffer
+	RingBuffer_gps buf(false);
+	bool sentence_complete = false;
+	//  Tracks /sentences received/ not time.
+	uint8_t idx = 0;
+	while (idx < timeout) {
+		//  Accumulate sentence characters...
+		if (available()) {
+			char c = read();
+			buf.write(c);
+			if (c == 0x00) {
+				++idx;
+				sentence_complete = true;
+			}
+		}
+		//  If a full sentence has arrived, judge it
+		if (sentence_complete) {
+			sentence_complete = false;
+			//  read_all() in this case just returns head, so that strstr can
+			//  walk the buffer normally. Note that strstr will not obey ring
+			//  behavior, so this buffer must be used linearly.
+			//  If it matches our target sentence, we can exit.
+			if (strstr(buf.read_all(), sentence)) {
+				return gps_err_none;
+			}
+			//  Otherwise, reset and try try again.
+			buf.wipe();
+		}
+	}
+	//  Eventually, give up.
+	return gps_err_timeout;
+}
+
+gps_err_t GPS::pause(bool status) {
+	//  We should only act if the new status differs from the old
+	if (is_asleep != status) {
+		return gps_err_none;
+	}
+	is_asleep = status;
+	if (is_asleep) {
+		return command(GPS_SLEEP);
+	}
+	else {
+		//  Sending an empty message suffices to wake the device.
+		command("");
+		//  Await success response
+		return await_response(GPS_AWAKE);
+	}
+}
+
 gps_err_t GPS::validate_checksum(char* sentence) {
 	char* p = strchr(sentence, '*');
 	if (p != NULL) {
@@ -156,16 +277,15 @@ gps_err_t GPS::parse_rmc(char* sentence) {
 		return gps_err_nofix;
 	}
 	parse_coord(p);
-
 	//  Skip the hemisphere field (parsed previously)
 	p = strchr(p + 1, ',');
+
 	//  Seek to the next field (longitude)
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
 	parse_coord(p);
-
 	//  Skip the hemisphere field (parsed previously)
 	p = strchr(p + 1, ',');
 

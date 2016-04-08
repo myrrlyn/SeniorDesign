@@ -13,7 +13,8 @@
 
 void setup() {
 	Serial.begin(115200);
-	Serial.println("Arduino online");
+	Serial.println("Arduino online!");
+	Serial.println();
 
 	pinMode(2, INPUT);
 
@@ -22,13 +23,21 @@ void setup() {
 
 	digitalWrite(10, HIGH);
 	digitalWrite(11, HIGH);
-	delay(2500);
+
+	gps.begin(9600);
+
+	gps.command(GPS_OUTPUT_RMCGGA);
+	gps.command(GPS_FIX_UPDATE_1000);
+	gps.command(GPS_PRINT_2000);
+
+	delay(500);
 }
 
-
 void loop() {
-	Serial.print("Pin 2: ");
-	Serial.println(digitalRead(2));
-	us_scan_head();
-	delay(1000);
+	gps.store(gps.read());
+	if (gps.sentence_ready()) {
+		Serial.println(gps.latest_sentence());
+		gps.parse((char*)gps.latest_sentence());
+		gps.debug();
+	}
 }
