@@ -108,9 +108,9 @@ typedef enum : uint8_t {
 
 class GPS {
 public:
-	GPS(HardwareSerial* comm);
-	GPS(SoftwareSerial* comm);
-	gps_err_t begin(uint16_t baud);
+	GPS(HardwareSerial* hwser);
+	GPS(SoftwareSerial* swser);
+	gps_err_t begin(uint16_t baud = 9600);
 	bool available(void);
 	char read(void);
 	gps_err_t store(char inbound);

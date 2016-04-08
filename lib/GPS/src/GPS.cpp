@@ -2,12 +2,12 @@
 
 #include <Utility.hpp>
 
-GPS::GPS(HardwareSerial* comm) {
-	_hwser = comm;
+GPS::GPS(HardwareSerial* hwser) {
+	_hwser = hwser;
 }
 
-GPS::GPS(SoftwareSerial* comm) {
-	_swser = comm;
+GPS::GPS(SoftwareSerial* swser) {
+	_swser = swser;
 }
 
 gps_err_t GPS::begin(uint16_t baud) {
@@ -37,8 +37,8 @@ bool GPS::available() {
 }
 
 char GPS::read() {
-	register char c = 0x00;
-	if (is_asleep) {
+	register char c = -1;
+	if (is_asleep || !available()) {
 		return c;
 	}
 	if (_hwser != NULL) {
@@ -114,7 +114,7 @@ gps_err_t GPS::command(const char* sentence) {
 	return gps_err_none;
 }
 
-gps_err_t GPS::await_response(const char *sentence, uint8_t timeout) {
+gps_err_t GPS::await_response(const char* sentence, uint8_t timeout) {
 	//  This is being used as a linear buffer
 	RingBuffer_gps buf(false);
 	bool sentence_complete = false;
@@ -391,12 +391,6 @@ gps_err_t GPS::parse_double(double* store, char* fragment, uint8_t precision) {
 }
 
 void GPS::debug() {
-	Serial.println("Communicators:");
-	Serial.print("_hwser: ");
-	Serial.println((uint16_t)_hwser);
-	Serial.print("_swser: ");
-	Serial.println((uint16_t)_swser);
-
 	Serial.println("Date/Time:");
 	if (timestamp.year < 10) {
 		Serial.print('0');
@@ -437,8 +431,8 @@ void GPS::debug() {
 	Serial.println(timestamp.millisecond);
 
 	Serial.println("Latitude/Longitude:");
-	Serial.println(location.latitude.i);
-	Serial.println(location.longitude.i);
+	Serial.println((double)location.latitude.i / 100.0);
+	Serial.println((double)location.longitude.i / 100.0);
 
 	Serial.println("Altitudes (Sea, WGS84):");
 	Serial.println(alt_sea);

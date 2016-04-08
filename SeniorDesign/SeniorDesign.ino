@@ -11,6 +11,8 @@
 #include "Lookout.hpp"
 #include "Navigator.hpp"
 
+uint32_t  interval;
+
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Arduino online!");
@@ -26,18 +28,22 @@ void setup() {
 
 	gps.begin(9600);
 
-	gps.command(GPS_OUTPUT_RMCGGA);
-	gps.command(GPS_FIX_UPDATE_1000);
-	gps.command(GPS_PRINT_2000);
+
+	// gps.command(GPS_COMM_BAUD_57600);
+	// gps.begin(57600);
+
+	gps.command(GPS_OUTPUT_ALL);
+	gps.command(GPS_FIX_UPDATE_200);
+	gps.command(GPS_PRINT_200);
 
 	delay(500);
+
+	interval = millis();
 }
 
 void loop() {
-	gps.store(gps.read());
-	if (gps.sentence_ready()) {
-		Serial.println(gps.latest_sentence());
-		gps.parse((char*)gps.latest_sentence());
+	if (millis() - interval > 1000) {
 		gps.debug();
+		interval = millis();
 	}
 }
