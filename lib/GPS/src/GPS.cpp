@@ -34,6 +34,9 @@ gps_err_t GPS::parse(char* sentence) {
 	if (err != gps_err_none) {
 		return err;
 	}
+	if (strstr(sentence, "$GPGGA")) {
+		return parse_gga(sentence);
+	}
 	if (strstr(sentence, "$GPRMC")) {
 		return parse_rmc(sentence);
 	}
@@ -54,6 +57,79 @@ gps_err_t GPS::validate_checksum(char* sentence) {
 		return gps_err_none;
 	}
 	return gps_err_nocsum;
+}
+
+gps_err_t GPS::parse_gga(char* sentence) {
+	char *p = sentence;
+
+	//  First comes timestamp
+	p = strchr(p, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	parse_time(p);
+
+	//  Next are latitude and longitude
+	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	parse_coord(p);
+	//  Skipping the hemisphere field...
+	p = strchr(p + 1, ',');
+
+	//  Now seek to longitude
+	p = strchr(p + 1, ',');
+	parse_coord(p);
+	//  Skipping the hemisphere field...
+	p = strchr(p + 1, ',');
+
+	//  Fix information
+	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	fix_info = (gps_fix_t)(p[1] - '0');
+
+	//  Satellite count
+	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	satellite_count = 0;
+	for (uint8_t idx = 1; p[idx] != ','; ++idx) {
+		satellite_count *= 10;
+		satellite_count += p[idx] - '0';
+	}
+
+	//  Horizontal Dilution of Precision
+	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	hdop = 0.0;
+	parse_double(&hdop, p, 2);
+
+	//  Altitude
+	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	parse_double(&alt_sea, p, 1);
+	//  Skip the M
+	p = strchr(p + 1, ',');
+	//  WGS84 altitude
+	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	parse_double(&alt_wgs84, p, 1);
+	//  Skip the M
+	p = strchr(p + 1, ',');
+
+	//  We don't need the DGPS information here.
+
+	return gps_err_none;
 }
 
 gps_err_t GPS::parse_rmc(char* sentence) {
@@ -98,10 +174,14 @@ gps_err_t GPS::parse_rmc(char* sentence) {
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	parse_velocity(p);
+	parse_double(&velocity.speed, p);
 
-	//  Skip the heading field (parsed previously)
+	//  Seek to the next field (heading)
 	p = strchr(p + 1, ',');
+	if (p[1] == ',') {
+		return gps_err_nofix;
+	}
+	parse_double(&velocity.heading, p);
 
 	//  Seek to the next field (date)
 	p = strchr(p + 1, ',');
@@ -169,31 +249,23 @@ gps_err_t GPS::parse_coord(char* fragment) {
 	return gps_err_none;
 }
 
-gps_err_t GPS::parse_velocity(char *fragment) {
-	velocity.speed = 0.0;
+gps_err_t GPS::parse_double(double* store, char* fragment, uint8_t precision) {
+	*store = 0.0;
+	bool neg = false;
 	for (uint8_t idx = 1; fragment[idx] != ','; ++idx) {
-		if (fragment[idx] == '.') {
-			continue;
+		switch (fragment[idx]) {
+			case '-': neg = ~neg;  //  Intentional fallthrough
+			case '.': continue;
 		}
-		velocity.speed *= 10.0;
-		velocity.speed += (double)(fragment[idx] - '0');
+		*store *= 10.0;
+		*store += fragment[idx] - '0';
 	}
-	//  GPS module provides two degrees of precision.
-	velocity.speed /= 100.0;
-
-	//  Seek to the heading field
-	fragment = strchr(fragment + 1, ',');
-
-	velocity.heading = 0.0;
-	for (uint8_t idx = 1; fragment[idx] != ','; ++idx) {
-		if (fragment[idx] == '.') {
-			continue;
-		}
-		velocity.heading *= 10.0;
-		velocity.heading += (double)(fragment[idx] - '0');
+	for (uint8_t idx = 0; idx < precision; ++idx) {
+		*store /= 10.0;
 	}
-	//  GPS module provides two degrees of precision.
-	velocity.heading /= 100.0;
+	if (neg) {
+		*store *= -1.0;
+	}
 
 	return gps_err_none;
 }
@@ -248,9 +320,22 @@ void GPS::debug() {
 	Serial.println(location.latitude.i);
 	Serial.println(location.longitude.i);
 
+	Serial.println("Altitudes (Sea, WGS84):");
+	Serial.println(alt_sea);
+	Serial.println(alt_wgs84);
+
+	Serial.println("Horizontal Dilution of Precision:");
+	Serial.println(hdop);
+
 	Serial.println("Speed/Heading:");
 	Serial.println(velocity.speed);
 	Serial.println(velocity.heading);
+
+	Serial.println("Fix Quality:");
+	Serial.println(fix_info);
+
+	Serial.println("Satellites:");
+	Serial.println(satellite_count);
 
 	Serial.println();
 }

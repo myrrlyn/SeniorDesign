@@ -95,6 +95,12 @@ typedef struct {
 	double heading;
 } gps_velocity_t;
 
+typedef enum : uint8_t {
+	gps_fix_invalid = 0,
+	gps_fix_gps     = 1,
+	gps_fix_dgps    = 2,
+} gps_fix_t;
+
 class GPS {
 public:
 	GPS(HardwareSerial* comm);
@@ -102,23 +108,31 @@ public:
 	gps_err_t begin(uint16_t baud);
 	char read(void);
 	gps_err_t parse(char* sentence);
+
 	void debug(void);
 
 protected:
 	gps_err_t validate_checksum(char* sentence);
+	gps_err_t parse_gga(char* sentence);
 	gps_err_t parse_rmc(char* sentence);
 
 	gps_err_t parse_time(char* fragment);
 	gps_err_t parse_date(char* fragment);
 	gps_err_t parse_coord(char* fragment);
-	gps_err_t parse_velocity(char* fragment);
+	gps_err_t parse_double(double* store, char* fragment, uint8_t precision = 2);
 
+private:
 	HardwareSerial* _hwser = NULL;
 	SoftwareSerial* _swser = NULL;
 
 	gps_time_t timestamp;
 	gps_coord_t location;
+	double hdop;
+	double alt_sea;
+	double alt_wgs84;
 	gps_velocity_t velocity;
+	gps_fix_t fix_info;
+	uint8_t satellite_count;
 };
 
 #endif//__APPAYNE_SENIORDESIGN_GPS_H
