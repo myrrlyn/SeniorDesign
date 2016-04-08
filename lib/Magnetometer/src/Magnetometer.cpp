@@ -22,6 +22,8 @@ mag_err_t Magnetometer::begin() {
 	register mag_err_t err;
 	uint8_t buf[3];
 
+	i2c_addr = MAGNETOMETER_I2C_ADDR;
+
 	//  Join the Wire bus as a master device.
 	Wire.begin();
 
@@ -64,9 +66,6 @@ mag_err_t Magnetometer::begin() {
 		return err;
 	}
 
-	//  Set the flag to indicate successful initialization.
-	this->i2c_addr = MAGNETOMETER_I2C_ADDR;
-
 	return err;
 }
 
@@ -74,7 +73,7 @@ mag_err_t Magnetometer::set_gain(mag_gain_t gain) {
 	register mag_err_t err;
 
 	//  Check for initialization
-	if (this->i2c_addr != MAGNETOMETER_I2C_ADDR) {
+	if (i2c_addr != MAGNETOMETER_I2C_ADDR) {
 		return mag_err_noinit;
 	}
 
@@ -103,7 +102,7 @@ mag_err_t Magnetometer::read_raw(int16_t* x, int16_t* y, int16_t* z) {
 	register mag_err_t err;
 
 	//  Check for initialization
-	if (this->i2c_addr != MAGNETOMETER_I2C_ADDR) {
+	if (i2c_addr != MAGNETOMETER_I2C_ADDR) {
 		return mag_err_noinit;
 	}
 
@@ -137,7 +136,7 @@ mag_err_t Magnetometer::read_gauss(double* x, double* y, double* z) {
 	register mag_err_t err;
 
 	//  Check for initialization
-	if (this->i2c_addr != MAGNETOMETER_I2C_ADDR) {
+	if (i2c_addr != MAGNETOMETER_I2C_ADDR) {
 		return mag_err_noinit;
 	}
 
@@ -150,7 +149,7 @@ mag_err_t Magnetometer::read_gauss(double* x, double* y, double* z) {
 	}
 
 	double divisor;
-	switch (this->gain) {
+	switch (gain) {
 		case mag_gain_1370: divisor = 1370.0; break;
 		case mag_gain_1090: divisor = 1090.0; break;
 		case mag_gain_0820: divisor =  820.0; break;
@@ -173,7 +172,7 @@ mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes) {
 	register mag_err_t err;
 
 	//  Check for initialization
-	if (this->i2c_addr != MAGNETOMETER_I2C_ADDR) {
+	if (i2c_addr != MAGNETOMETER_I2C_ADDR) {
 		return mag_err_noinit;
 	}
 
@@ -207,18 +206,18 @@ mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes) {
 
 mag_err_t Magnetometer::i2c_read(mag_reg_t reg, uint8_t* data, uint8_t len) {
 	//  Check for initialization
-	if (this->i2c_addr != MAGNETOMETER_I2C_ADDR) {
+	if (i2c_addr != MAGNETOMETER_I2C_ADDR) {
 		return mag_err_noinit;
 	}
 
 	//  Begin I2C transmission
-	Wire.beginTransmission(this->i2c_addr);
+	Wire.beginTransmission(i2c_addr);
 	//  First byte out is the register address.
 	Wire.write((uint8_t)reg);
 	//  Read; no followup.
 	Wire.endTransmission();
 	//  Permit the device to begin transmitting.
-	Wire.requestFrom(this->i2c_addr, len);
+	Wire.requestFrom(i2c_addr, len);
 
 	//  Read len bytes into data
 	for (uint8_t idx = 0; idx < len; ++idx) {
@@ -235,12 +234,12 @@ mag_err_t Magnetometer::i2c_read(mag_reg_t reg, uint8_t* data, uint8_t len) {
 
 mag_err_t Magnetometer::i2c_write(mag_reg_t reg, uint8_t data) {
 	//  Check for initialization
-	if (this->i2c_addr != MAGNETOMETER_I2C_ADDR) {
+	if (i2c_addr != MAGNETOMETER_I2C_ADDR) {
 		return mag_err_noinit;
 	}
 
 	//  Begin I2C transmission
-	Wire.beginTransmission(this->i2c_addr);
+	Wire.beginTransmission(i2c_addr);
 	//  First byte out is register address.
 	Wire.write((uint8_t)reg);
 	//  Next byte out is payload.

@@ -7,4 +7,6 @@
 extern GPS gps;
 extern Magnetometer compass;
 
+extern void debug_mag(void);
+
 #endif//__APPAYNE_SENIORDESIGN_NAVIGATOR_HPP

@@ -11,7 +11,7 @@
 #include "Lookout.hpp"
 #include "Navigator.hpp"
 
-uint32_t  interval;
+uint32_t interval;
 
 void setup() {
 	Serial.begin(115200);
@@ -27,7 +27,7 @@ void setup() {
 	digitalWrite(11, HIGH);
 
 	gps.begin(9600);
-
+	compass.begin();
 
 	// gps.command(GPS_COMM_BAUD_57600);
 	// gps.begin(57600);
@@ -44,6 +44,8 @@ void setup() {
 void loop() {
 	if (millis() - interval > 1000) {
 		gps.debug();
+		Serial.println();
+		debug_mag();
 		interval = millis();
 	}
 }
