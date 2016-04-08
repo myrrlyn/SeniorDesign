@@ -71,6 +71,9 @@ parse_hex('~');
 //  Returns 0x00 (0)
 ```
 
+(NB: A bug in parsing caused this method to improperly parse values A through F.
+This bug was fixed in commit `6c0e23e`.)
+
 ###### `uint8_t parse_hex(char l, char h)`
 
 Parses two alphanumeric characters into the number they represent. This has the

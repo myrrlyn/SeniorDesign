@@ -6,7 +6,12 @@ void pinsMode(iopair_t pair) {
 }
 
 int16_t uint8x2_to_int16(uint8_t l, uint8_t h) {
-	int16_t tmp = 0x0000;
+//  Most multi-register variables have hardware protections to make atomic reads
+//  in little-endian order (i.e. once the low register is read, no register can
+//  be written until the high register is read). This code ensures that reads
+//  will occur in the proper order, and encourages the compiler to keep the
+//  intermediate results in the core rather than using RAM until finished.
+	register int16_t tmp = 0x0000;
 	tmp |= l;
 	tmp |= (h << 8);
 	return tmp;
@@ -27,11 +32,7 @@ uint8_t parse_hex(char c) {
 }
 
 uint8_t parse_hex(char h, char l) {
-//  Most multi-register variables have hardware protections to make atomic reads
-//  in little-endian order (i.e. once the low register is read, no register can
-//  be written until the high register is read). This code ensures that reads
-//  will occur in the proper order, and encourages the compiler to keep the
-//  intermediate results in the core rather than using RAM until finished.
+//  Same rationale as in uint8x2_to_int16().
 	register uint8_t tmp = 0x00;
 	tmp  = parse_hex(l);
 	tmp |= parse_hex(h) << 4;
