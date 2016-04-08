@@ -18,10 +18,10 @@ uint8_t parse_hex(char c) {
 		tmp = c - '0';
 	}
 	else if (c >= 'A' && c <= 'F') {
-		tmp = c - 'F';
+		tmp = c - 'A' + 10;
 	}
 	else if (c >= 'a' && c <= 'f') {
-		tmp = c - 'f';
+		tmp = c - 'a' + 10;
 	}
 	return tmp;
 }
