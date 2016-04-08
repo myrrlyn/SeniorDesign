@@ -37,6 +37,7 @@ gps_err_t GPS::parse(char* sentence) {
 	if (strstr(sentence, "$GPRMC")) {
 		return parse_rmc(sentence);
 	}
+	return gps_err_noparse;
 }
 
 //  Must take a string ending in \r\n\0
@@ -60,22 +61,12 @@ gps_err_t GPS::parse_rmc(char* sentence) {
 	char* p = sentence;
 
 	//  First up is the timestamp
-	p = strchr(p + 1, ',');
+	p = strchr(p, ',');
 	//  There's (almost) always a timestamp, but, if not, fail.
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	//  This is not easily looped. Hopefully the compiler will optimize out the
-	//  redundant stores.
-	timestamp.hour         = (p[1] - '0') * 10;
-	timestamp.hour        += (p[2] - '0');
-	timestamp.minute       = (p[3] - '0') * 10;
-	timestamp.minute      += (p[4] - '0');
-	timestamp.second       = (p[5] - '0') * 10;
-	timestamp.second      += (p[6] - '0');
-	timestamp.millisecond  = (p[8] - '0') * 100;
-	timestamp.millisecond += (p[9] - '0') * 10;
-	timestamp.millisecond += (p[10] - '0');
+	parse_time(p);
 
 	//  Seek to next field (active/void fix)
 	p = strchr(p + 1, ',');
@@ -88,92 +79,121 @@ gps_err_t GPS::parse_rmc(char* sentence) {
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	location.latitude.i = 0;
-	for (uint8_t idx = 1; p[idx] != ','; ++idx) {
-		if (p[idx] == '.') {
-			continue;
-		}
-		location.latitude.i *= (int32_t)10;
-		location.latitude.i += (int32_t)(p[idx] - '0');
-	}
+	parse_coord(p);
 
-	//  Seek to the next field (hemisphere)
+	//  Skip the hemisphere field (parsed previously)
 	p = strchr(p + 1, ',');
-	if (p[1] == ',') {
-		return gps_err_nofix;
-	}
-	if (p[1] == 'S') {
-		location.latitude.i *= -1;
-	}
-
 	//  Seek to the next field (longitude)
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	location.longitude.i = 0;
-	for (uint8_t idx = 1; p[idx] != ','; ++idx) {
-		if (p[idx] == '.') {
-			continue;
-		}
-		location.longitude.i *= (int32_t)10;
-		location.longitude.i += (int32_t)(p[idx] - '0');
-	}
+	parse_coord(p);
 
-	//  Seek to the next field (hemisphere)
+	//  Skip the hemisphere field (parsed previously)
 	p = strchr(p + 1, ',');
-	if (p[1] == ',') {
-		return gps_err_nofix;
-	}
-	if (p[1] == 'W') {
-		location.longitude.i *= -1;
-	}
 
 	//  Seek to the next field (speed)
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	velocity.speed = 0.0;
-	for (uint8_t idx = 1; p[idx] != ','; ++idx) {
-		if (p[idx] == '.') {
-			continue;
-		}
-		velocity.speed *= 10.0;
-		velocity.speed += (double)(p[idx] - '0');
-	}
-	//  GPS module provides two degrees of precision.
-	velocity.speed /= 100.0;
+	parse_velocity(p);
 
-	//  Seek to the next field (heading)
+	//  Skip the heading field (parsed previously)
 	p = strchr(p + 1, ',');
-	if (p[1] == ',') {
-		return gps_err_nofix;
-	}
-	velocity.heading = 0.0;
-	for (uint8_t idx = 1; p[idx] != ','; ++idx) {
-		if (p[idx] == '.') {
-			continue;
-		}
-		velocity.heading *= 10.0;
-		velocity.heading += (double)(p[idx] - '0');
-	}
-	//  GPS module provides two degrees of precision.
-	velocity.heading /= 100.0;
 
 	//  Seek to the next field (date)
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	timestamp.day    = (p[1] - '0') * 10;
-	timestamp.day   += (p[2] - '0');
-	timestamp.month  = (p[3] - '0') * 10;
-	timestamp.month += (p[4] - '0');
-	timestamp.year   = (p[5] - '0') * 10;
-	timestamp.year  += (p[6] - '0');
+	parse_date(p);
 
 	//  We do not care about the magnetic variation, and it's optional anyway.
+
+	return gps_err_none;
+}
+
+gps_err_t GPS::parse_time(char* fragment) {
+	//  This is not easily looped. Hopefully the compiler will optimize out the
+	//  redundant stores.
+	timestamp.hour         = (fragment[1] - '0') * 10;
+	timestamp.hour        += (fragment[2] - '0');
+	timestamp.minute       = (fragment[3] - '0') * 10;
+	timestamp.minute      += (fragment[4] - '0');
+	timestamp.second       = (fragment[5] - '0') * 10;
+	timestamp.second      += (fragment[6] - '0');
+	timestamp.millisecond  = (fragment[8] - '0') * 100;
+	timestamp.millisecond += (fragment[9] - '0') * 10;
+	timestamp.millisecond += (fragment[10] - '0');
+
+	return gps_err_none;
+}
+
+gps_err_t GPS::parse_date(char* fragment) {
+	timestamp.day    = (fragment[1] - '0') * 10;
+	timestamp.day   += (fragment[2] - '0');
+	timestamp.month  = (fragment[3] - '0') * 10;
+	timestamp.month += (fragment[4] - '0');
+	timestamp.year   = (fragment[5] - '0') * 10;
+	timestamp.year  += (fragment[6] - '0');
+
+	return gps_err_none;
+}
+
+gps_err_t GPS::parse_coord(char* fragment) {
+	gps_coord_u coord;
+	coord.i = 0;
+
+	for (uint8_t idx = 1; fragment[idx] != ','; ++idx) {
+		if (fragment[idx] == '.') {
+			continue;
+		}
+		coord.i *= (int32_t)10;
+		coord.i += (int32_t)(fragment[idx] - '0');
+	}
+
+	//  Seek to the hemisphere field
+	fragment = strchr(fragment + 1, ',');
+
+	switch (fragment[1]) {
+		case 'N': location.latitude.i = coord.i; break;
+		case 'E': location.longitude.i = coord.i; break;
+		case 'S': location.latitude.i = -coord.i; break;
+		case 'W': location.longitude.i = -coord.i; break;
+		case ',': return gps_err_noparse; break;
+		default:  return gps_err_nofix; break;
+	}
+
+	return gps_err_none;
+}
+
+gps_err_t GPS::parse_velocity(char *fragment) {
+	velocity.speed = 0.0;
+	for (uint8_t idx = 1; fragment[idx] != ','; ++idx) {
+		if (fragment[idx] == '.') {
+			continue;
+		}
+		velocity.speed *= 10.0;
+		velocity.speed += (double)(fragment[idx] - '0');
+	}
+	//  GPS module provides two degrees of precision.
+	velocity.speed /= 100.0;
+
+	//  Seek to the heading field
+	fragment = strchr(fragment + 1, ',');
+
+	velocity.heading = 0.0;
+	for (uint8_t idx = 1; fragment[idx] != ','; ++idx) {
+		if (fragment[idx] == '.') {
+			continue;
+		}
+		velocity.heading *= 10.0;
+		velocity.heading += (double)(fragment[idx] - '0');
+	}
+	//  GPS module provides two degrees of precision.
+	velocity.heading /= 100.0;
 
 	return gps_err_none;
 }

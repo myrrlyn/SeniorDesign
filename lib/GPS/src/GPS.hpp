@@ -67,6 +67,7 @@ typedef enum : uint8_t {
 	gps_err_badcsum = 0xFE,
 	gps_err_nocsum  = 0xFD,
 	gps_err_nofix   = 0xFC,
+	gps_err_noparse = 0xFB,
 } gps_err_t;
 
 typedef struct {
@@ -82,11 +83,11 @@ typedef struct {
 typedef union {
 	double d;
 	int32_t i;
-} coord_u;
+} gps_coord_u;
 
 typedef struct {
-	coord_u latitude;
-	coord_u longitude;
+	gps_coord_u latitude;
+	gps_coord_u longitude;
 } gps_coord_t;
 
 typedef struct {
@@ -106,6 +107,11 @@ public:
 protected:
 	gps_err_t validate_checksum(char* sentence);
 	gps_err_t parse_rmc(char* sentence);
+
+	gps_err_t parse_time(char* fragment);
+	gps_err_t parse_date(char* fragment);
+	gps_err_t parse_coord(char* fragment);
+	gps_err_t parse_velocity(char* fragment);
 
 	HardwareSerial* _hwser = NULL;
 	SoftwareSerial* _swser = NULL;
