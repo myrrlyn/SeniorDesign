@@ -104,8 +104,8 @@ public:
 	void debug(void);
 
 protected:
-	gps_err_t validate_checksum(uint8_t len, char* sentence);
-	gps_err_t parse_rmc(uint8_t len, char* sentence);
+	gps_err_t validate_checksum(char* sentence);
+	gps_err_t parse_rmc(char* sentence);
 
 	HardwareSerial* _hwser = NULL;
 	SoftwareSerial* _swser = NULL;
