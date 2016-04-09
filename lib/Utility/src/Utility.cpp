@@ -5,7 +5,7 @@ void pinsMode(iopair_t pair) {
 	pinMode(pair.rx, INPUT);
 }
 
-int16_t uint8x2_to_int16(uint8_t l, uint8_t h) {
+int16_t uint8x2_to_int16(uint8_t h, uint8_t l) {
 //  Most multi-register variables have hardware protections to make atomic reads
 //  in little-endian order (i.e. once the low register is read, no register can
 //  be written until the high register is read). This code ensures that reads

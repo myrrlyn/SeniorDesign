@@ -43,13 +43,13 @@ iopairMode(example_pair);
 //  pinMode(example_pair.rx, INPUT);
 ```
 
-###### `int16_t uint8x2_to_int16(uint8_t l, uint8_t h)`
+###### `int16_t uint8x2_to_int16(uint8_t h, uint8_t l)`
 
 Transforms two `uint8_t` numbers into a SIGNED `int16_t` number. Parameters are
-in little-endian order: `l` is the low half, `h` is the high half.
+in big-endian order: `h` is the high half, `l` is the low half.
 
 ```cpp
-uint8x2_to_int16(0xCD/*205*/, 0xAB/*171*/);
+uint8x2_to_int16(0xAB /*171*/, 0xCD /*205*/);
 //  Returns 0xABCD (-11_213)
 ```
 
@@ -74,7 +74,7 @@ parse_hex('~');
 (NB: A bug in parsing caused this method to improperly parse values A through F.
 This bug was fixed in commit `6c0e23e`.)
 
-###### `uint8_t parse_hex(char l, char h)`
+###### `uint8_t parse_hex(char h, char l)`
 
 Parses two alphanumeric characters into the number they represent. This has the
 same behavior as above: only 0-9, A-F, and a-f are permitted, and errors return
