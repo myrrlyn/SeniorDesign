@@ -40,6 +40,7 @@ typedef enum : uint8_t {
 	mag_reg_ida    = 0x0A,
 	mag_reg_idb    = 0x0B,
 	mag_reg_idc    = 0x0C,
+
 	mag_reg_ida_id = 0x48,
 	mag_reg_idb_id = 0x34,
 	mag_reg_idc_id = 0x33,

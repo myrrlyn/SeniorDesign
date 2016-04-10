@@ -114,10 +114,11 @@ mag_err_t Magnetometer::read_raw(int16_t* x, int16_t* y, int16_t* z) {
 		return err;
 	}
 
-	//  The hardware is in big-endian. We are in little-endian. As such, byte
-	//  pairs in tmp are backwards. Use the functions from Utility to properly
-	//  store the retrieved values in the given storage. The Utility function is
-	//  in little-endian parameter order, also.
+	//  The hardware is in big-endian. We are in little-endian. As such, we
+	//  have to store them properly by the microcontroller's standards. Utility
+	//  functions will handle this for us.
+	//  Parameters are read in big-endian order (left-to right text).
+	// store = uint8x2_to_int16(msb, lsb);
 	*x = uint8x2_to_int16(tmp[0], tmp[1]);
 	*z = uint8x2_to_int16(tmp[2], tmp[3]);
 	*y = uint8x2_to_int16(tmp[4], tmp[5]);
@@ -195,7 +196,7 @@ mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes) {
 
 	//  Correct for negatives
 	if (tanres < 0.0) {
-		tanres += M_PI;
+		tanres += M_TAU;
 	}
 
 	//  Convert from radians to degrees

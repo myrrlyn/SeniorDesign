@@ -10,6 +10,7 @@
 
 #include "Lookout.hpp"
 #include "Navigator.hpp"
+#include "Pilot.hpp"
 
 uint32_t interval;
 
@@ -23,28 +24,32 @@ void setup() {
 	pinMode(10, OUTPUT);
 	pinMode(11, OUTPUT);
 
-	digitalWrite(10, HIGH);
-	digitalWrite(11, HIGH);
-
 	gps.begin(9600);
 	compass.begin();
-
-	// gps.command(GPS_COMM_BAUD_57600);
-	// gps.begin(57600);
+	compass.set_gain(mag_gain_0230);
 
 	gps.command(GPS_OUTPUT_ALL);
 	gps.command(GPS_FIX_UPDATE_200);
 	gps.command(GPS_PRINT_200);
 
+	OCR0A = 0xAF;
+	TIMSK0 |= _BV(OCIE0A);
+
+	set_speed(0);
+
+	start();
+
 	delay(500);
 
 	interval = millis();
+	set_speed(127);
 }
 
 void loop() {
+	us_scan_head();
+	debug_motors();
 	if (millis() - interval > 1000) {
 		gps.debug();
-		Serial.println();
 		debug_mag();
 		interval = millis();
 	}

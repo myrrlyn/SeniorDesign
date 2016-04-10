@@ -1,8 +1,15 @@
 #include <RingBuffer.hpp>
 #include <Ultrasonic.hpp>
 
+#include "Pilot.hpp"
+
 #define US_HEAD 0
 #define US_TAIL 6
+
+//  Magic numbers setting the critical range of the sensors. Values inside this
+//  range indicate an obstruction.
+#define US_DISTANCE_MAX 2500
+#define US_DISTANCE_MIN  500
 
 Ultrasonic us00({ .tx = 24, .rx = 25 });
 Ultrasonic us01({ .tx = 26, .rx = 27 });
@@ -23,7 +30,7 @@ Ultrasonic* us_all[] = {
 	&us06, &us07, &us08, &us09, &us10, &us11,
 };
 
-RingBuffer_us head(true);
+RingBuffer_us buf_head(true);
 
 void us_debug(uint8_t num) {
 	Serial.print("Sensor #");
@@ -42,27 +49,23 @@ void us_scan_head() {
 		Serial.print("Sensor #");
 		Serial.print(idx + 1);
 		Serial.print(": ");
-		Serial.print(distance);
-		Serial.println(distance >= 5000 ? " (good)" : " (bad)");
-		if (distance < 5000) {
-			head.write(false);
+		if ((distance < 4000 && distance > 900)) {
+			Serial.print("bad  ");
+			buf_head.write(false);
 		}
 		else {
-			head.write(true);
+			Serial.print("good ");
+			buf_head.write(true);
 		}
-		tmp = head.read_all('&');
-		Serial.print("Buffer state: ");
-		//  These need replaced with calls to the pilot.
-		if (tmp) {
-			Serial.println("Running");
-			analogWrite(10, 256 / 2);
-			analogWrite(11, 256 / 2);
-		}
-		else {
-			Serial.println("Stopped");
-			digitalWrite(10, LOW);
-			digitalWrite(11, LOW);
-		}
+		Serial.println(distance);
+	}
+	tmp = buf_head.read_all('&');
+	if (tmp) {
+		start();
+		set_speed(127);
+	}
+	else {
+		full_stop();
 	}
 }
 
