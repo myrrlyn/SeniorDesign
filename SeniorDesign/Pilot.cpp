@@ -1,84 +1,149 @@
+#include "Pilot.hpp"
+
 #include <Arduino.h>
 #include <stdint.h>
 
-uint8_t current_speed;
-uint8_t current_goal;
-bool regular_movement = false;
-
-uint32_t pilot_interval;
-uint32_t accelerator = 0;
-bool dir;
-
-void start() {
-	regular_movement = true;
+Pilot::Pilot() {
+	left = {
+		.goal = 0,
+		.speed = 0,
+		.direction = motor_offline,
+		.status = false,
+	};
+	right = {
+		.goal = 0,
+		.speed = 0,
+		.direction = motor_offline,
+		.status = false,
+	};
+	running = false;
+	activity = move_forward;
 }
 
-void full_stop() {
-	regular_movement = false;
-	current_speed = 0;
+void Pilot::start() {
+	left.status = true;
+	right.status = true;
+	running = true;
+}
+
+void Pilot::full_stop() {
+	left.status = false;
+	left.direction = motor_offline;
+	left.speed = 0;
+	right.status = false;
+	right.direction = motor_offline;
+	right.speed = 0;
+	running = false;
+	activity = all_stop;
 	analogWrite(10, 0);
 	analogWrite(11, 0);
 }
 
-void set_speed(uint8_t new_speed) {
-	current_goal = new_speed;
+void Pilot::set_speed(uint8_t speed) {
+	left.goal = speed;
+	right.goal = speed;
 }
 
-void adjust() {
-	if (current_goal > current_speed) {
-		++current_speed;
-	}
-	// else if (current_goal > current_speed) {
-	// 	current_speed += (current_goal - current_speed + 1) / 2;
-	// }
-	else if (current_goal < current_speed) {
-		--current_speed;
-	}
-	// else if (current_goal < current_speed) {
-	// 	current_speed -= (current_speed - current_goal + 1) / 2;
-	// }
-	// Serial.print("PWM Value: ");
-	// Serial.println(current_speed);
-	analogWrite(10, current_speed);
-	analogWrite(11, current_speed);
+void Pilot::set_routine(maneouvre_t routine) {
+	activity = routine;
 }
 
-bool change_gears = false;
-
-void debug_motors() {
-	//  When we reach target speed, set the flag
-	// if (current_speed == current_goal) {
-		// change_gears = true;
-	// }
-	// if (change_gears) {
-		// change_gears = false;
-		// if (dir) {
-		// 	set_speed(current_goal + 20);
-		// 	if (current_goal > 256 - 32) {
-		// 		dir = false;
-		// 	}
-		// }
-		// else {
-		// 	set_speed(current_goal - 10);
-		// 	if (current_goal < 16) {
-		// 		dir = true;
-		// 	}
-		// }
-	// 	Serial.print("New target: ");
-	// 	Serial.println(current_goal);
-	// }
-	Serial.print("Blocked? ");
-	Serial.println(regular_movement ? "Running" : "Blocked");
-	Serial.print("Speed: ");
-	Serial.println(current_speed);
-}
-
-SIGNAL(TIMER0_COMPA_vect) {
-	if (regular_movement) {
-		++accelerator;
-		if (accelerator >= 500) {
-			adjust();
-			accelerator = 0;
+void Pilot::adjust() {
+	Serial.println("Adjusting speed");
+	switch (activity) {
+		case move_backwards:  //  Intentional fallthrough
+		case move_forward: {
+			adjust('l');
+			adjust('r');
+			break;
 		}
+		case turn_left: {
+			stop('l');
+			adjust('r');
+			break;
+		}
+		case turn_right: {
+			adjust('l');
+			stop('r');
+			break;
+		}
+		case all_stop:
+		default: {
+			full_stop();
+		}
+	}
+}
+
+void Pilot::adjust(char motor) {
+	switch (motor) {
+		case 'L':  //  Intentional fallthrough
+		case 'l': {
+			if (left.status == true) {
+				if (left.goal > left.speed) {
+					Serial.println("Speeding up");
+					++left.speed;
+				}
+				else if (left.goal < left.speed) {
+					--left.speed;
+				}
+				analogWrite(10, left.speed);
+			}
+			break;
+		} Serial.println("This line should not be reached. You dun goofed.");
+		case 'R':  //  Intentional fallthrough
+		case 'r': {
+			if (right.status == true) {
+				if (right.goal > right.speed) {
+					++right.speed;
+				}
+				else if (right.goal < right.speed) {
+					--right.speed;
+					Serial.println("Slowing down");
+				}
+				analogWrite(11, right.speed);
+			}
+			break;
+		}
+		default: Serial.println("ERROR: ADJUSTED A NON-EXISTENT MOTOR!");
+	}
+}
+
+void Pilot::stop(char motor) {
+	switch (motor) {
+		case 'L':
+		case 'l': {
+			left.speed = 0;
+			analogWrite(10, 0);
+			break;
+		}
+		case 'R':
+		case 'r': {
+			right.speed = 0;
+			analogWrite(11, 0);
+			break;
+		}
+		default: {
+			full_stop();
+		}
+	}
+}
+
+void Pilot::debug() {
+	Serial.print("Status: ");
+	Serial.println(pilot.running ? "Running" : "Blocked");
+	Serial.print("Speed: ");
+	Serial.print(left.speed);
+	Serial.print(", ");
+	Serial.println(right.speed);
+}
+
+uint32_t accelerator;
+Pilot pilot;
+
+SIGNAL(TIMER1_COMPA_vect) {
+	++accelerator;
+	if (accelerator >= 250) {
+		pilot.adjust();
+		accelerator = 0;
 	}
 }

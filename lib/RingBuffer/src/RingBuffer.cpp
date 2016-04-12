@@ -42,16 +42,16 @@ bool RingBuffer_us::read_all(char op) {
 		return false;
 	}
 	bool tmp =  buf[0];
+	uint8_t sum = (uint8_t)buf[0];
 	for (uint8_t idx = 1; idx < len; ++idx) {
 		switch (op) {
+			case '+': sum += (uint8_t)buf[idx]; return (sum > len / 2); break;
 			case '^': tmp ^= buf[idx]; break;
 			case '|': tmp |= buf[idx]; break;
 			case '&':
 			default:  tmp &= buf[idx]; break;
 		}
 	}
-	head = buf;
-	tail = buf;
 	return tmp;
 }
 
