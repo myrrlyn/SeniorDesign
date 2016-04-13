@@ -2,12 +2,13 @@
 #define __APPAYNE_SENIORDESIGN_MAGNETOMETER_H
 
 #include <stdint.h>
-//  I don't know why, but PlatformIO doesn't know where to find <Wire.h> while
-//  compiling the cpp file, but DOES while compiling this header. Commenting out
-//  this #include causes a failure, despite the fact that the sister source file
-//  has this exact same line in it. Leaving this line in the cpp file doesn't
-//  cause a failure when the #include is present HERE, which makes even less
-//  sense. I don't get C/C++ build environments. Go away, 1970s systems.
+/*  I don't know why, but PlatformIO doesn't know where to find <Wire.h> while
+ *  compiling the cpp file, but DOES while compiling this header. Commenting out
+ *  this #include causes a failure, despite the fact that the sister source file
+ *  has this exact same line in it. Leaving this line in the cpp file doesn't
+ *  cause a failure when the #include is present HERE, which makes even less
+ *  sense. I don't get C/C++ build environments. Go away, 1970s systems.
+ */
 #include <Wire.h>
 
 typedef enum : uint8_t {
@@ -62,7 +63,7 @@ public:
 	mag_err_t set_gain(mag_gain_t gain);
 	mag_err_t read_raw(int16_t* x, int16_t* y, int16_t* z);
 	mag_err_t read_gauss(double* x, double* y, double* z);
-	mag_err_t compass(double* heading, mag_axes_t axes = mag_axes_yx);
+	mag_err_t compass(double* heading, mag_axes_t axes = mag_axes_xy);
 
 protected:
 	mag_err_t i2c_read(mag_reg_t reg, uint8_t* data, uint8_t len = 1);
