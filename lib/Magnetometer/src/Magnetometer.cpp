@@ -10,7 +10,7 @@
 //  in the world. <tau-day.com>
 #ifndef M_TAU
 #define APPAYNE_M_TAU
-#define M_TAU (2 * M_PI);
+#define M_TAU (2 * M_PI)
 #endif//M_TAU
 
 Magnetometer::Magnetometer() {
@@ -185,22 +185,28 @@ mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes) {
 		return err;
 	}
 
+	//  Use atan2 to get a result in (-π, π]
+	//  Normally, atan2 takes y, x to act on y / x
+	//  However, navigational angles are the inverse of mathematical angles, and
+	//  switch x <--> y
+	//  Thus, atan2(east, north) yields the correct result.
 	switch (axes) {
-		case mag_axes_xy: tanres = atan2(tmp[1], tmp[0]); break;
-		case mag_axes_xz: tanres = atan2(tmp[2], tmp[0]); break;
-		case mag_axes_yz: tanres = atan2(tmp[2], tmp[1]); break;
-		case mag_axes_yx: tanres = atan2(tmp[0], tmp[1]); break;
-		case mag_axes_zx: tanres = atan2(tmp[0], tmp[2]); break;
-		case mag_axes_zy: tanres = atan2(tmp[1], tmp[2]); break;
+		case mag_axes_xy: tanres = atan2(tmp[0], tmp[1]); break;
+		case mag_axes_xz: tanres = atan2(tmp[0], tmp[2]); break;
+		case mag_axes_yz: tanres = atan2(tmp[1], tmp[2]); break;
+		case mag_axes_yx: tanres = atan2(tmp[1], tmp[0]); break;
+		case mag_axes_zx: tanres = atan2(tmp[2], tmp[0]); break;
+		case mag_axes_zy: tanres = atan2(tmp[2], tmp[1]); break;
+		default: tanres = atan2(tmp[0], tmp[1]); break;
 	}
 
-	//  Correct for negatives
+	//  Correct for negatives by advancing one full circle.
 	if (tanres < 0.0) {
 		tanres += M_TAU;
 	}
 
 	//  Convert from radians to degrees
-	*heading = tanres * 360.0 / M_TAU;
+	*heading = tanres * (360.0 / M_TAU);
 
 	return err;
 }
