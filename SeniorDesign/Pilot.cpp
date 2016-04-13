@@ -49,7 +49,9 @@ void Pilot::set_routine(maneouvre_t routine) {
 }
 
 void Pilot::adjust() {
-	Serial.println("Adjusting speed");
+#ifdef DEVEL
+	// Serial.println("Adjusting speed");
+#endif
 	switch (activity) {
 		case move_backwards:  //  Intentional fallthrough
 		case move_forward: {
@@ -80,7 +82,6 @@ void Pilot::adjust(char motor) {
 		case 'l': {
 			if (left.status == true) {
 				if (left.goal > left.speed) {
-					Serial.println("Speeding up");
 					++left.speed;
 				}
 				else if (left.goal < left.speed) {
@@ -89,7 +90,7 @@ void Pilot::adjust(char motor) {
 				analogWrite(10, left.speed);
 			}
 			break;
-		} Serial.println("This line should not be reached. You dun goofed.");
+		}
 		case 'R':  //  Intentional fallthrough
 		case 'r': {
 			if (right.status == true) {
@@ -98,13 +99,17 @@ void Pilot::adjust(char motor) {
 				}
 				else if (right.goal < right.speed) {
 					--right.speed;
-					Serial.println("Slowing down");
 				}
 				analogWrite(11, right.speed);
 			}
 			break;
 		}
-		default: Serial.println("ERROR: ADJUSTED A NON-EXISTENT MOTOR!");
+		default: {
+#ifdef DEVEL
+			Serial.println("ERROR: ADJUSTED A NON-EXISTENT MOTOR!");
+#endif
+			break;
+		}
 	}
 }
 
