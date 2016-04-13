@@ -62,28 +62,35 @@ void us_debug(uint8_t num) {
 	Serial.println(" inches.");
 }
 
-void us_scan_head() {
-	register bool tmp;
-	for (uint16_t idx = 0; idx < 6; ++idx) {
-		uint32_t distance = us_all[US_HEAD + idx]->measure();
-		Serial.print("Sensor #");
-		Serial.print(idx + 1);
-		Serial.print(": ");
-		if (distance < US_DISTANCE_MAX &&
-distance > US_DISTANCE_MIN) {
-			Serial.print("bad  ");
-			bufs_all[idx]->write(false);
-			buf_head.write(bufs_all[idx]->read_all('+'));
-		}
-		else {
-			Serial.print("good ");
-			bufs_all[idx]->write(true);
-			buf_head.write(bufs_all[idx]->read_all('+'));
-		}
-		Serial.println(distance);
+void us_scan(uint8_t sensor, bool* avg, bool* imm) {
+	uint32_t distance = us_all[sensor]->measure();
+	if (distance < US_DISTANCE_MAX && distance > US_DISTANCE_MIN) {
+		*imm = false;
 	}
-	tmp = buf_head.read_all('&');
-	if (tmp) {
+	else {
+		*imm = true;
+	}
+	bufs_all[sensor]->write(*imm);
+	*avg = bufs_all[sensor]->read_all('+');
+	buf_head.write(*avg);
+#ifdef DEVEL
+	Serial.print("Current sensor state: ");
+	Serial.println(*imm ? "Good" : "Bad");
+	Serial.print("Average sensor state: ");
+	Serial.println(*avg ? "GOOD" : "BAD");
+	Serial.print("Global sensor state: ");
+	Serial.println(buf_head.read_all('&') ? "RUNNING" : "STOPPED");
+#endif
+}
+
+void us_scan_head() {
+	register bool immediate;
+	register bool average;
+	for (uint16_t idx = 0; idx < 6; ++idx) {
+		us_debug(US_HEAD + idx);
+		us_scan(US_HEAD + idx, &average, &immediate);
+	}
+	if (buf_head.read_all('&')) {
 		pilot.start();
 		pilot.set_speed(PILOT_SPEED);
 	}
@@ -93,12 +100,15 @@ distance > US_DISTANCE_MIN) {
 }
 
 void us_scan_tail() {
+	// register bool immediate;
+	// register bool average;
 	for (uint8_t idx = 0; idx < 6; ++idx) {
 		us_debug(US_TAIL + idx);
+		// us_scan(US_TAIL + idx, &average, &immediate);
 	}
 }
 
 void us_scan_all() {
 	us_scan_head();
-	us_scan_tail();
+	// us_scan_tail();
 }
