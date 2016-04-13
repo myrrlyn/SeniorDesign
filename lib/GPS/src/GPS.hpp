@@ -112,8 +112,7 @@ public:
 	GPS(SoftwareSerial* swser);
 	gps_err_t begin(uint16_t baud = 9600);
 	bool available(void);
-	char read(void);
-	gps_err_t store(char inbound);
+	gps_err_t store_stream(void);
 	bool sentence_ready(void);
 	char* latest_sentence(void);
 	gps_err_t parse(char* sentence);
@@ -124,19 +123,25 @@ public:
 
 	gps_time_t timestamp(void);
 	gps_coord_t location(void);
+	double hdop(void);
+	double altitude(bool sea_or_wgs84 = false);
+	gps_velocity_t velocity(void);
+	gps_fix_t fix_info(void);
+	uint8_t satellites(void);
 
+#ifdef DEVEL
 	void debug(void);
-
+#endif
 protected:
+	char read(void);
+	gps_err_t store(char inbound);
 	gps_err_t validate_checksum(char* sentence);
 	gps_err_t parse_gga(char* sentence);
 	gps_err_t parse_rmc(char* sentence);
-
 	gps_err_t parse_time(char* fragment);
 	gps_err_t parse_date(char* fragment);
 	gps_err_t parse_coord(char* fragment);
-	gps_err_t parse_double(double* store, char* fragment, uint8_t precision = 2);
-
+	gps_err_t parse_double(double* store, char* fragment);
 private:
 	HardwareSerial* _hwser = NULL;
 	SoftwareSerial* _swser = NULL;
@@ -146,17 +151,17 @@ private:
 
 	gps_time_t _timestamp;
 	gps_coord_t _location;
-	double hdop;
+	double _hdop;
 	double alt_sea;
 	double alt_wgs84;
-	gps_velocity_t velocity;
-	gps_fix_t fix_info;
-	uint8_t satellite_count;
+	gps_velocity_t _velocity;
+	gps_fix_t _fix_info;
+	uint8_t _satellite_count;
 
 	bool is_asleep = false;
 	bool is_sentence_ready = false;
 	RingBuffer_gps* buf_active = &buf_0;
-	RingBuffer_gps* buf_second = &buf_1;
+	RingBuffer_gps* buf_stable = &buf_1;
 };
 
 #endif//__APPAYNE_SENIORDESIGN_GPS_H

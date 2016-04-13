@@ -36,44 +36,15 @@ bool GPS::available() {
 	}
 }
 
-char GPS::read() {
-	register char c = -1;
-	if (is_asleep || !available()) {
-		return c;
+gps_err_t GPS::store_stream() {
+	gps_err_t err;
+	while (available()) {
+		err = store(read());
+		if (err != gps_err_none) {
+			return err;
+		}
 	}
-	if (_hwser != NULL) {
-		c = _hwser->read();
-	}
-	else if (_swser != NULL) {
-		c = _swser->read();
-	}
-	return c;
-}
-
-gps_err_t GPS::store(char inbound) {
-	if (inbound == -1) {
-		return gps_err_nochar;
-	}
-	//  If the buffer is full (['*']['A']['B'][0x00]), the last cell (['B'])
-	//  will silently be overwritten until the stream stops. Since we can't
-	//  allocate extra memory on the fly, we give up on that sentence and wait
-	//  for a NULL. The parser will catch it and throw it away.
-	buf_active->write(inbound);
-	// UDR0 = inbound;
-	if (inbound == '\n') {
-		//  Sentence was completed; swap buffer roles and set flag.
-		// Serial.print((uint16_t)buf_active, HEX);
-		// Serial.print(":\t");
-		// Serial.println(buf_active->read_all());
-		RingBuffer_gps* tmp = buf_active;
-		buf_active = buf_second;
-		buf_second = tmp;
-		is_sentence_ready = true;
-		buf_active->wipe();
-		return gps_msg_ready;
-	}
-
-	return gps_err_none;
+	return err;
 }
 
 bool GPS::sentence_ready() {
@@ -82,11 +53,14 @@ bool GPS::sentence_ready() {
 
 char* GPS::latest_sentence() {
 	is_sentence_ready = false;
-	return buf_second->read_all();
+	return buf_stable->read_all();
 }
 
 gps_err_t GPS::parse(char* sentence) {
 	gps_err_t err;
+	if (sentence == NULL) {
+		sentence = buf_stable->read_all();
+	}
 	//  Validate checksum
 	err = validate_checksum(sentence);
 	if (err != gps_err_none) {
@@ -173,6 +147,73 @@ gps_coord_t GPS::location() {
 	return _location;
 }
 
+double GPS::hdop() {
+	return _hdop;
+}
+
+double GPS::altitude(bool sea_or_wgs84) {
+	if (sea_or_wgs84) {
+		return alt_wgs84;
+	}
+	else {
+		return alt_sea;
+	}
+}
+
+gps_velocity_t GPS::velocity() {
+	return _velocity;
+}
+
+gps_fix_t GPS::fix_info() {
+	return _fix_info;
+}
+
+uint8_t GPS::satellites() {
+	return _satellite_count;
+}
+
+//  Protected methods
+
+char GPS::read() {
+	register char c = -1;
+	if (is_asleep || !available()) {
+		return c;
+	}
+	if (_hwser != NULL) {
+		c = _hwser->read();
+	}
+	else if (_swser != NULL) {
+		c = _swser->read();
+	}
+	return c;
+}
+
+gps_err_t GPS::store(char inbound) {
+	if (inbound == -1 || inbound == 0) {
+		return gps_err_nochar;
+	}
+	//  If the buffer is full (['*']['A']['B'][0x00]), the last cell (['B'])
+	//  will silently be overwritten until the stream stops. Since we can't
+	//  allocate extra memory on the fly, we give up on that sentence and wait
+	//  for a NULL. The parser will catch it and throw it away.
+	buf_active->write(inbound);
+	// UDR0 = inbound;
+	if (inbound == '\n') {
+		//  Sentence was completed; swap buffer roles and set flag.
+		// Serial.print((uint16_t)buf_active, HEX);
+		// Serial.print(":\t");
+		// Serial.println(buf_active->read_all());
+		RingBuffer_gps* tmp = buf_active;
+		buf_active = buf_stable;
+		buf_stable = tmp;
+		is_sentence_ready = true;
+		buf_active->wipe();
+		return gps_msg_ready;
+	}
+
+	return gps_err_none;
+}
+
 gps_err_t GPS::validate_checksum(char* sentence) {
 	char* p = strchr(sentence, '*');
 	if (p != NULL) {
@@ -218,17 +259,17 @@ gps_err_t GPS::parse_gga(char* sentence) {
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	fix_info = (gps_fix_t)(p[1] - '0');
+	_fix_info = (gps_fix_t)(p[1] - '0');
 
 	//  Satellite count
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	satellite_count = 0;
+	_satellite_count = 0;
 	for (uint8_t idx = 1; p[idx] != ','; ++idx) {
-		satellite_count *= 10;
-		satellite_count += p[idx] - '0';
+		_satellite_count *= 10;
+		_satellite_count += p[idx] - '0';
 	}
 
 	//  Horizontal Dilution of Precision
@@ -236,15 +277,15 @@ gps_err_t GPS::parse_gga(char* sentence) {
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	hdop = 0.0;
-	parse_double(&hdop, p, 2);
+	_hdop = 0.0;
+	parse_double(&_hdop, p);
 
 	//  Altitude
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	parse_double(&alt_sea, p, 1);
+	parse_double(&alt_sea, p);
 	//  Skip the M
 	p = strchr(p + 1, ',');
 	//  WGS84 altitude
@@ -252,7 +293,7 @@ gps_err_t GPS::parse_gga(char* sentence) {
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	parse_double(&alt_wgs84, p, 1);
+	parse_double(&alt_wgs84, p);
 	//  Skip the M
 	p = strchr(p + 1, ',');
 
@@ -302,14 +343,14 @@ gps_err_t GPS::parse_rmc(char* sentence) {
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	parse_double(&velocity.speed, p);
+	parse_double(&_velocity.speed, p);
 
 	//  Seek to the next field (heading)
 	p = strchr(p + 1, ',');
 	if (p[1] == ',') {
 		return gps_err_nofix;
 	}
-	parse_double(&velocity.heading, p);
+	parse_double(&_velocity.heading, p);
 
 	//  Seek to the next field (date)
 	p = strchr(p + 1, ',');
@@ -377,16 +418,24 @@ gps_err_t GPS::parse_coord(char* fragment) {
 	return gps_err_none;
 }
 
-gps_err_t GPS::parse_double(double* store, char* fragment, uint8_t precision) {
+//  You know what, no, I *don't* want to just use atof and call it a day.
+gps_err_t GPS::parse_double(double* store, char* fragment) {
 	*store = 0.0;
+	uint8_t precision = 0;
+	bool fractions = false;
 	bool neg = false;
 	for (uint8_t idx = 1; fragment[idx] != ','; ++idx) {
+		//  Non-number control characters. Set state and cycle the loop.
 		switch (fragment[idx]) {
+			case '.': fractions = true; continue;
 			case '-': neg = ~neg;  //  Intentional fallthrough
-			case '.': continue;
+			case '+': continue;
 		}
 		*store *= 10.0;
 		*store += fragment[idx] - '0';
+		if (fractions) {
+			++precision;
+		}
 	}
 	for (uint8_t idx = 0; idx < precision; ++idx) {
 		*store /= 10.0;
@@ -398,6 +447,9 @@ gps_err_t GPS::parse_double(double* store, char* fragment, uint8_t precision) {
 	return gps_err_none;
 }
 
+//  Debugging
+
+#ifdef DEVEL
 void GPS::debug() {
 	Serial.println("Date/Time:");
 	if (_timestamp.year < 10) {
@@ -447,17 +499,18 @@ void GPS::debug() {
 	Serial.println(alt_wgs84);
 
 	Serial.println("Horizontal Dilution of Precision:");
-	Serial.println(hdop);
+	Serial.println(_hdop);
 
 	Serial.println("Speed/Heading:");
-	Serial.println(velocity.speed);
-	Serial.println(velocity.heading);
+	Serial.println(_velocity.speed);
+	Serial.println(_velocity.heading);
 
 	Serial.println("Fix Quality:");
-	Serial.println(fix_info);
+	Serial.println(_fix_info);
 
 	Serial.println("Satellites:");
-	Serial.println(satellite_count);
+	Serial.println(_satellite_count);
 
 	Serial.println();
 }
+#endif

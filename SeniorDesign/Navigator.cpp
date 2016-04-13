@@ -125,19 +125,20 @@ void debug_mag() {
 
 //  Library-provided callback attached to Serial1 RX
 void serialEvent1() {
+	gps_err_t err;
 	//  Completely drain the GPS stream -- we cannot depend on loop() to let
 	//  this run often enough to only read once per cycle
-	while (nav.gps()->available()) {
+	// while (nav.gps()->available()) {
 		//  A single read-and-store function would probably be better...
-		nav.gps()->store(nav.gps()->read());
+		err = nav.gps()->store_stream();
 		//  This isn't an interrupt function, it's a callback executed in the
 		//  foreground of the main-while loop on the same level as loop()
 		//  As such, we are not really under a time constraint here vs doing
 		//  the parsing in loop(). Separation of concerns thus says to keep this
 		//  in here, out of loop()'s view.
-		if (nav.gps()->sentence_ready()) {
+		if (err == gps_msg_ready) {
 			// Serial.println(gps.latest_sentence());
 			nav.gps()->parse(nav.gps()->latest_sentence());
 		}
-	}
+	// }
 }
