@@ -165,6 +165,14 @@ gps_err_t GPS::pause(bool status) {
 	}
 }
 
+gps_time_t GPS::timestamp() {
+	return _timestamp;
+}
+
+gps_coord_t GPS::location() {
+	return _location;
+}
+
 gps_err_t GPS::validate_checksum(char* sentence) {
 	char* p = strchr(sentence, '*');
 	if (p != NULL) {
@@ -318,26 +326,26 @@ gps_err_t GPS::parse_rmc(char* sentence) {
 gps_err_t GPS::parse_time(char* fragment) {
 	//  This is not easily looped. Hopefully the compiler will optimize out the
 	//  redundant stores.
-	timestamp.hour         = (fragment[1] - '0') * 10;
-	timestamp.hour        += (fragment[2] - '0');
-	timestamp.minute       = (fragment[3] - '0') * 10;
-	timestamp.minute      += (fragment[4] - '0');
-	timestamp.second       = (fragment[5] - '0') * 10;
-	timestamp.second      += (fragment[6] - '0');
-	timestamp.millisecond  = (fragment[8] - '0') * 100;
-	timestamp.millisecond += (fragment[9] - '0') * 10;
-	timestamp.millisecond += (fragment[10] - '0');
+	_timestamp.hour         = (fragment[1] - '0') * 10;
+	_timestamp.hour        += (fragment[2] - '0');
+	_timestamp.minute       = (fragment[3] - '0') * 10;
+	_timestamp.minute      += (fragment[4] - '0');
+	_timestamp.second       = (fragment[5] - '0') * 10;
+	_timestamp.second      += (fragment[6] - '0');
+	_timestamp.millisecond  = (fragment[8] - '0') * 100;
+	_timestamp.millisecond += (fragment[9] - '0') * 10;
+	_timestamp.millisecond += (fragment[10] - '0');
 
 	return gps_err_none;
 }
 
 gps_err_t GPS::parse_date(char* fragment) {
-	timestamp.day    = (fragment[1] - '0') * 10;
-	timestamp.day   += (fragment[2] - '0');
-	timestamp.month  = (fragment[3] - '0') * 10;
-	timestamp.month += (fragment[4] - '0');
-	timestamp.year   = (fragment[5] - '0') * 10;
-	timestamp.year  += (fragment[6] - '0');
+	_timestamp.day    = (fragment[1] - '0') * 10;
+	_timestamp.day   += (fragment[2] - '0');
+	_timestamp.month  = (fragment[3] - '0') * 10;
+	_timestamp.month += (fragment[4] - '0');
+	_timestamp.year   = (fragment[5] - '0') * 10;
+	_timestamp.year  += (fragment[6] - '0');
 
 	return gps_err_none;
 }
@@ -358,10 +366,10 @@ gps_err_t GPS::parse_coord(char* fragment) {
 	fragment = strchr(fragment + 1, ',');
 
 	switch (fragment[1]) {
-		case 'N': location.latitude.i = coord.i; break;
-		case 'E': location.longitude.i = coord.i; break;
-		case 'S': location.latitude.i = -coord.i; break;
-		case 'W': location.longitude.i = -coord.i; break;
+		case 'N': _location.latitude.i = coord.i; break;
+		case 'E': _location.longitude.i = coord.i; break;
+		case 'S': _location.latitude.i = -coord.i; break;
+		case 'W': _location.longitude.i = -coord.i; break;
 		case ',': return gps_err_noparse; break;
 		default:  return gps_err_nofix; break;
 	}
@@ -392,47 +400,47 @@ gps_err_t GPS::parse_double(double* store, char* fragment, uint8_t precision) {
 
 void GPS::debug() {
 	Serial.println("Date/Time:");
-	if (timestamp.year < 10) {
+	if (_timestamp.year < 10) {
 		Serial.print('0');
 	}
-	Serial.print(timestamp.year);
+	Serial.print(_timestamp.year);
 	Serial.print('-');
-	if (timestamp.month < 10) {
+	if (_timestamp.month < 10) {
 		Serial.print('0');
 	}
-	Serial.print(timestamp.month);
+	Serial.print(_timestamp.month);
 	Serial.print('-');
-	if (timestamp.day < 10) {
+	if (_timestamp.day < 10) {
 		Serial.print('0');
 	}
-	Serial.print(timestamp.day);
+	Serial.print(_timestamp.day);
 	Serial.print('T');
-	if (timestamp.hour < 10) {
+	if (_timestamp.hour < 10) {
 		Serial.print('0');
 	}
-	Serial.print(timestamp.hour);
+	Serial.print(_timestamp.hour);
 	Serial.print(':');
-	if (timestamp.minute < 10) {
+	if (_timestamp.minute < 10) {
 		Serial.print('0');
 	}
-	Serial.print(timestamp.minute);
+	Serial.print(_timestamp.minute);
 	Serial.print(':');
-	if (timestamp.second < 10) {
+	if (_timestamp.second < 10) {
 		Serial.print('0');
 	}
-	Serial.print(timestamp.second);
+	Serial.print(_timestamp.second);
 	Serial.print('.');
-	if (timestamp.millisecond < 100) {
+	if (_timestamp.millisecond < 100) {
 		Serial.print('0');
 	}
-	if (timestamp.millisecond < 10) {
+	if (_timestamp.millisecond < 10) {
 		Serial.print('0');
 	}
-	Serial.println(timestamp.millisecond);
+	Serial.println(_timestamp.millisecond);
 
 	Serial.println("Latitude/Longitude:");
-	Serial.println((double)location.latitude.i / 100.0);
-	Serial.println((double)location.longitude.i / 100.0);
+	Serial.println((double)_location.latitude.i / 100.0);
+	Serial.println((double)_location.longitude.i / 100.0);
 
 	Serial.println("Altitudes (Sea, WGS84):");
 	Serial.println(alt_sea);

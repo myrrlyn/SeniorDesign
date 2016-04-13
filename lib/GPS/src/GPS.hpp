@@ -122,6 +122,9 @@ public:
 	gps_err_t await_response(const char* sentence, uint8_t timeout = 5);
 	gps_err_t pause(bool status);
 
+	gps_time_t timestamp(void);
+	gps_coord_t location(void);
+
 	void debug(void);
 
 protected:
@@ -141,8 +144,8 @@ private:
 	RingBuffer_gps buf_0;
 	RingBuffer_gps buf_1;
 
-	gps_time_t timestamp;
-	gps_coord_t location;
+	gps_time_t _timestamp;
+	gps_coord_t _location;
 	double hdop;
 	double alt_sea;
 	double alt_wgs84;
