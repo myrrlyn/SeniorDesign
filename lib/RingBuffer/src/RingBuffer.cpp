@@ -45,14 +45,17 @@ bool RingBuffer_us::read_all(char op) {
 	uint8_t sum = (uint8_t)buf[0];
 	for (uint8_t idx = 1; idx < len; ++idx) {
 		switch (op) {
-			case '+': sum += (uint8_t)buf[idx]; return (sum > len / 2); break;
+			case '+': sum += (uint8_t)buf[idx]; break;
 			case '^': tmp ^= buf[idx]; break;
 			case '|': tmp |= buf[idx]; break;
 			case '&':
 			default:  tmp &= buf[idx]; break;
 		}
 	}
-	return tmp;
+	switch (op) {
+		case '+': return (sum > (len / 2));
+		default: return tmp;
+	}
 }
 
 void RingBuffer_us::set_overwrite(bool state) {
