@@ -63,12 +63,14 @@ public:
 	mag_err_t set_gain(mag_gain_t gain);
 	mag_err_t read_raw(int16_t* x, int16_t* y, int16_t* z);
 	mag_err_t read_gauss(double* x, double* y, double* z);
-	mag_err_t compass(double* heading, mag_axes_t axes = mag_axes_xy);
+	mag_err_t compass(double* heading, mag_axes_t axes = mag_axes_yx);
 
+#ifdef DEVEL
+	void debug(void);
+#endif
 protected:
 	mag_err_t i2c_read(mag_reg_t reg, uint8_t* data, uint8_t len = 1);
 	mag_err_t i2c_write(mag_reg_t reg, uint8_t data);
-
 private:
 	uint8_t i2c_addr;
 	mag_gain_t gain;

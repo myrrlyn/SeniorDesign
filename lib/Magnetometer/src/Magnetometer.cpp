@@ -186,10 +186,8 @@ mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes) {
 	}
 
 	//  Use atan2 to get a result in (-π, π]
-	//  Normally, atan2 takes y, x to act on y / x
-	//  However, navigational angles are the inverse of mathematical angles, and
-	//  switch x <--> y
-	//  Thus, atan2(east, north) yields the correct result.
+	//  Align the magnetometer so that it has positive axes on East and North
+	//  mag_axes_NE => degrees CW from North
 	switch (axes) {
 		case mag_axes_xy: tanres = atan2(tmp[0], tmp[1]); break;
 		case mag_axes_xz: tanres = atan2(tmp[0], tmp[2]); break;
@@ -199,6 +197,8 @@ mag_err_t Magnetometer::compass(double* heading, mag_axes_t axes) {
 		case mag_axes_zy: tanres = atan2(tmp[2], tmp[1]); break;
 		default: tanres = atan2(tmp[0], tmp[1]); break;
 	}
+
+	tanres -= (M_TAU / 4);
 
 	//  Correct for negatives by advancing one full circle.
 	if (tanres < 0.0) {
@@ -256,8 +256,50 @@ mag_err_t Magnetometer::i2c_write(mag_reg_t reg, uint8_t data) {
 	return mag_err_none;
 }
 
+#ifdef DEVEL
+void Magnetometer::debug() {
+	int16_t ix, iy, iz;
+	double dx, dy, dz;
+	double heading;
+	Serial.print("RAW: ");
+	read_raw(&ix, &iy, &iz);
+	Serial.print(ix);
+	Serial.print(' ');
+	Serial.print(iy);
+	Serial.print(' ');
+	Serial.println(iz);
+	Serial.print("GAUSS: ");
+	read_gauss(&dx, &dy, &dz);
+	Serial.print(dx);
+	Serial.print(' ');
+	Serial.print(dy);
+	Serial.print(' ');
+	Serial.println(dz);
+	compass(&heading, mag_axes_xy);
+	Serial.print("XY: ");
+	Serial.println(heading);
+	compass(&heading, mag_axes_xz);
+	Serial.print("XZ: ");
+	Serial.println(heading);
+	compass(&heading, mag_axes_yz);
+	Serial.print("YZ: ");
+	Serial.println(heading);
+	compass(&heading, mag_axes_yx);
+	Serial.print("YX: ");
+	Serial.println(heading);
+	compass(&heading, mag_axes_zx);
+	Serial.print("ZX: ");
+	Serial.println(heading);
+	compass(&heading, mag_axes_zy);
+	Serial.print("ZY: ");
+	Serial.println(heading);
+	Serial.println();
+}
+#endif
+
 //  Clean up after ourselves. Ideology can be good, but pollution is only bad.
 #ifdef  APPAYNE_M_TAU
 #undef  APPAYNE_M_TAU
 #undef  M_TAU
+
 #endif//APPAYNE_M_TAU

@@ -188,13 +188,51 @@ mag_err = mag.read_gauss(&dx, &dy, &dz);
 ###### Compass
 
 ```cpp
-mag_err_t compass(double* heading, mag_axes_t axes = mag_axes_xy);
+mag_err_t compass(double* heading, mag_axes_t axes = mag_axes_yx);
 ```
 
 Provides a value in 0..360 that is the **navigation** heading of the sensor.
 This function takes an optional value that allows for the device to be
 positioned in one of six orientations for measurement. If the positive halves of
 your chosen measurement axes do not point north and east, you're on your own.
+
+**Algorithm:**
+
+1. Mount the device in such a way that one of the marked X, Y, or Z axes is
+pointing FORWARD and one is pointing STARBOARD.
+2. Select the appropriate enumeration, mag_axes_{FORWARD}{STARBOARD}.
+3. Calculate atan2({FORWARD}, {STARBOARD}).
+4. Subtract one quarter turn.
+5. Add one full turn, if the result is negative.
+6. Convert to degrees (multiply by 360.0 / τ).
+
+**Reasoning:**
+
+Earth's magnetic field runs (mostly) North-South. The device's instruments are
+calibrated such that, in Earth's field, a positive number points towards
+geomagnetic North, and a negative number points towards geomagnetic South.
+
+For a sensor to report positive, it must be aimed between 271 (W) and 89 (E).
+For a sensor to report negative, it must be aimed between 91 (E) and 279 (W).
+Therefore, the following cases apply:
+
+| FORWARD | STARBOARD | FACING ANGLE  | DIAGRAM |
+|:-------:|:---------:|:--------------|:-------:|
+| +1      |  0        | 000 North     | └       |
+| +1      | -1        | 045 NorthEast | ├       |
+|  0      | -1        | 090 East      | ┌       |
+| -1      | -1        | 135 SouthEast | ┬       |
+| -1      |  0        | 180 South     | ┐       |
+| -1      | +1        | 225 SouthWest | ┤       |
+|  0      | +1        | 270 West      | ┘       |
+| +1      | +1        | 315 NorthWest | ┴       |
+
+So the navigational distance between True North and FORWARD is (act strictly in
+left-to-right):
+
+```c
+atan2(FORWARD, STARBOARD) * (360 / τ) - 90 % 360.0
+```
 
 ```cpp
 double nav;
