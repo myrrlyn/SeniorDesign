@@ -111,7 +111,6 @@ public:
 	GPS(HardwareSerial* hwser);
 	GPS(SoftwareSerial* swser);
 	gps_err_t begin(uint16_t baud = 9600);
-	bool available(void);
 	gps_err_t store_stream(void);
 	bool sentence_ready(void);
 	char* latest_sentence(void);
@@ -128,11 +127,11 @@ public:
 	gps_velocity_t velocity(void);
 	gps_fix_t fix_info(void);
 	uint8_t satellites(void);
-
 #ifdef DEVEL
 	void debug(void);
 #endif
 protected:
+	bool available(void);
 	char read(void);
 	gps_err_t store(char inbound);
 	gps_err_t validate_checksum(char* sentence);
@@ -149,14 +148,27 @@ private:
 	RingBuffer_gps buf_0;
 	RingBuffer_gps buf_1;
 
-	gps_time_t _timestamp;
-	gps_coord_t _location;
-	double _hdop;
-	double alt_sea;
-	double alt_wgs84;
-	gps_velocity_t _velocity;
-	gps_fix_t _fix_info;
-	uint8_t _satellite_count;
+	gps_time_t _timestamp = {
+		.year = 0,
+		.month = 0,
+		.day = 0,
+		.hour = 0,
+		.minute = 0,
+		.second = 0,
+	};
+	gps_coord_t _location = {
+		.latitude  = { .i = 0 },
+		.longitude = { .i = 0 },
+	};
+	double _hdop = 0.0;
+	double alt_sea = 0.0;
+	double alt_wgs84 = 0.0;
+	gps_velocity_t _velocity = {
+		.speed = 0.0,
+		.heading = 0.0,
+	};
+	gps_fix_t _fix_info = gps_fix_invalid;
+	uint8_t _satellite_count = 0;
 
 	bool is_asleep = false;
 	bool is_sentence_ready = false;

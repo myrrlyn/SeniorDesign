@@ -256,26 +256,6 @@ itself.
 hgps.begin();
 ```
 
-###### Stream Availability
-
-```cpp
-bool available(void);
-```
-
-**DEPRECATED**
-
-This method is a wrapper around the underlying Serial device's method of the
-same name and purpose. It is necessary only for establishing routines to shunt
-data from the Serial device to internal storage, and does **not** mean a full
-sentence is ready to be parsed. It *only* means that as-yet-unread characters
-are waiting in the Serial device.
-
-```cpp
-if (hgps.available()) {
-	UDR0 = hgps.read();
-}
-```
-
 ###### Serial->Storage Shunt
 
 ```cpp
@@ -507,6 +487,19 @@ This returns the count of satellites in active view of the antenna.
 
 #### PROTECTED METHODS
 
+###### Stream Availability
+
+```cpp
+bool available(void);
+```
+
+Wraps the underlying Serial device's `available()` method. Used internally to
+govern the shunt of data from the Serial device buffer to internal storage.
+
+For public usage, calling `store_stream()` is sufficient. That is a blocking
+call that will fully empty the Serial buffer into storage and notify the caller
+if a sentence transmission is complete.
+
 ###### Character Reader
 
 ```cpp
@@ -516,10 +509,6 @@ char GPS::read(void);
 Reads a single character from the head of the Serial device's queue and returns
 it directly. Returns -1 if the GPS module is asleep or no characters are
 available from the Serial device.
-
-```cpp
-UDR0 = hgps.read();
-```
 
 ###### Character Accumulator
 
@@ -535,14 +524,10 @@ stored. It also ensures that buffers are re-initialized to full zeros to ensure
 that old, long sentences do not crop up in new, short ones.
 
 Returns a `msg_ready` signal as well as raising the instance flag when a new
-sentence is completed. Returns `err_none` otherwise, as it is impossible for this
-method to fail. If an absurdly long sentence overruns the buffer space, the end
-buffer cell is continually overwritten in place until the sentence terminates.
-The parser will simply discard the broken sentence, and continue on.
-
-```cpp
-hgps.store(hgps.read());
-```
+sentence is completed. Returns `err_none` otherwise, as it is impossible for
+this method to fail. If an absurdly long sentence overruns the buffer space, the
+end buffer cell is continually overwritten in place until the sentence
+terminates. The parser will simply discard the broken sentence, and continue on.
 
 ###### Checksum Validator
 
@@ -551,7 +536,8 @@ gps_err_t validate_checksum(char* sentence);
 ```
 
 This inspects an NMEA sentence for the hexadecimal XOR checksum footer and
-ensures that the contents match the checksum. Returns `nocsum` or `badcsum` on error.
+ensures that the contents match the checksum. Returns `nocsum` or `badcsum` on
+error.
 
 ##### PARSERS
 
@@ -580,7 +566,7 @@ simple, though tedious, matter. Since RMC and GGA have some common fields, it
 makes sense to pull out individual field parsing into common subroutines.
 Again, *looking at you, Adafruit*.
 
-###### Debugging
+#### Debugging
 
 ```cpp
 void debug(void);
@@ -667,3 +653,6 @@ sentence is parsed before the next one finishes arriving, that's all that's
 really necessary anyway.
 
 Parsing is pretty fast, and sentences will only arrive every 100ms, max.
+
+TODO: Implement a simple linear buffer internally to make this a standalone
+library, and then publish so that people stop using Adafruit's GPS library.

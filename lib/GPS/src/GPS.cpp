@@ -24,18 +24,6 @@ gps_err_t GPS::begin(uint16_t baud) {
 	return gps_err_none;
 }
 
-bool GPS::available() {
-	if (_hwser != NULL) {
-		return _hwser->available();
-	}
-	else if (_swser != NULL) {
-		return _swser->available();
-	}
-	else {
-		return false;
-	}
-}
-
 gps_err_t GPS::store_stream() {
 	gps_err_t err;
 	while (available()) {
@@ -173,6 +161,18 @@ uint8_t GPS::satellites() {
 }
 
 //  Protected methods
+
+bool GPS::available() {
+	if (_hwser != NULL) {
+		return _hwser->available();
+	}
+	else if (_swser != NULL) {
+		return _swser->available();
+	}
+	else {
+		return false;
+	}
+}
 
 char GPS::read() {
 	register char c = -1;
