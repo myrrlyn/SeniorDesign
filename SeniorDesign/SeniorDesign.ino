@@ -12,6 +12,16 @@
 #include "Navigator.hpp"
 #include "Pilot.hpp"
 
+gps_coord_t active_target = {
+	.latitude  = { .i = +41379600 },
+	.longitude = { .i = -85003530 },
+};
+
+gps_coord_t demo_coord = {
+	.latitude  = { .i = 41379015 },
+	.longitude = { .i = -85004300 },
+};
+
 void setup() {
 	Serial.begin(115200);
 	Serial.println("Arduino online!");
@@ -19,37 +29,46 @@ void setup() {
 
 	pinMode(2, INPUT);
 
-	pinMode(10, OUTPUT);
-	pinMode(11, OUTPUT);
-
 	nav.gps()->begin(9600);
 	nav.mag()->begin();
-	nav.mag()->set_gain(mag_gain_0230);
+	nav.mag()->set_gain(mag_gain_1090);
 
 	nav.gps()->command(GPS_OUTPUT_ALL);
 	nav.gps()->command(GPS_FIX_UPDATE_200);
 	nav.gps()->command(GPS_PRINT_200);
 
-	OCR1A = 0xAF;
-	TIMSK1 |= _BV(OCIE1A);
+	OCR3A = 0xAF;
+	// TIMSK3 |= _BV(OCIE3A);
 
-	pilot.start();
-	pilot.set_routine(turn_left);
+	nav.set_target(demo_coord);
+
+	// pilot.init();
+	// pilot.start();
+	// pilot.set_routine(move_forward);
 
 	delay(500);
 
-	pilot.set_speed(127);
+	// pilot.set_speed(255);
 
+	//  DEBUGGING USE: Enable A and B interrupts.
+	TIMSK1 |= _BV(OCIE1A);
+	TIMSK1 |= _BV(OCIE1B);
+	// TCCR1B = 0x15;
+	OCR1A = 0x0020;
+	OCR1B = 0x00F5;
+	//  This is SUPPOSED to generate a high-duty-cycle wave on 11 and a low-duty
+	//  -cycle wave on 12.
 }
 
 bool flags[] = {
-	true, false, false, false, false,
+	false,
+	false,
+	false,
+	false,
+	false,
 };
 
-gps_coord_t demo_coord = {
-	.latitude = { .i = 41379500 },
-	.longitude = { .i = -85003400 },
-};
+double demo_heading = 90.00;
 
 uint32_t interval_us = 0;
 uint32_t interval_nav = 0;
@@ -57,25 +76,30 @@ uint32_t interval_actions = 0;
 gps_coord_t dist;
 
 void loop() {
-	if (millis() - interval_us > 500) {
+	/*
+	if (false && millis() - interval_us > 500) {
 		us_scan_all();
 		interval_us = millis();
 	}
 	// pilot.debug();
 	if (false && millis() - interval_nav > 1000) {
-		dist = nav.distance_to(demo_coord);
+		dist = nav.delta_to(demo_coord);
+		/*
 		Serial.print("Latitude difference:  ");
 		Serial.println(dist.latitude.i);
 		Serial.print("Longitude difference: ");
 		Serial.println(dist.longitude.i);
+		Serial.print("Bearing to target: ");
+		Serial.println(nav.angle_to(demo_heading));
+		*//*
+		nav.instruct_pilot();
 		nav.gps()->debug();
 		// nav.mag()->debug();
-		debug_mag();
 		interval_nav = millis();
 	}
-	/*
 	//  This is a simple choreography script to demonstrate different pilot
 	//  control methods.
+	*//*
 	if (flags[0] && (millis() - interval_actions > 0)) {
 		Serial.println("MOVING FORWARD");
 		pilot.full_stop();
@@ -115,7 +139,7 @@ void loop() {
 		flags[4] = true;
 	}
 	else if (flags[4] && (millis() - interval_actions > 80000)) {
-		actions = millis();
+		interval_actions = millis();
 		flags[0] = true;
 		flags[1] = false;
 		flags[2] = false;
