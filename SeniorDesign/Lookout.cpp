@@ -95,7 +95,7 @@ void us_scan_head() {
 		pilot.set_speed(PILOT_SPEED);
 	}
 	else {
-		pilot.full_stop();
+		pilot.set_routine(all_stop);
 	}
 }
 

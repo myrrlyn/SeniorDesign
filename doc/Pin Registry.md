@@ -31,50 +31,51 @@ This lists each device and which pins it occupies.
 
 ### Motors
 
-- Left Speed: 10
+- Left Speed: 11
 - Left Direction: 8
-- Right Speed: 11
+- Right Speed: 12
 - Right Direction: 9
 
 ### Switches
 
 - Stop/Run: ~RESET
-- Destination Selector: 2
+- Destination Selector: 4
 
 ### Tachometer
 
-- Left: 12
-- Right: 13
+- Left: 2
+- Right: 3
 
 ### Compass
 
-- Uses the I2C bus lines on 20 and 21.
+- Uses the I2C bus lines above D13.
 
 ## Pins by Number
 
-	D00
-	D01
-	D02 - Destination
-	D03
-	D04
+	D00 - Peripheral <- core <- USB
+	D01 - Peripheral -> core -> USB
+	D02 - Tachometer Left
+	D03 - Tachometer Right
+	D04 - Destination
 	D05
 	D06
 	D07
 
 	D08 - Motor Left Direction
 	D09 - Motor Right Direction
-	D10 - Motor Left Speed
-	D11 - Motor Right Speed
-	D12 - Tachometer Left
-	D13 - Tachometer Right
+	D10
+	D11 - Motor Left Speed
+	D12 - Motor Right Speed
+	D13
+
 	D14 - TX3
 	D15 - RX3
 	D16 - TX2
 	D17 - RX2
-	D18 - TX1 (GPS (optional))
-	D19 - RX1 (GPS (optional))
-	D20 - I2C bus (Compass)
-	D21 - I2C bus (Compass)
+	D18 - TX1 - GPS (Rx)
+	D19 - RX1 - GPS (Tx)
+	D20 - I2C bus
+	D21 - I2C bus
 
 	D22 - GPS (Enable)
 	D23 - GPS (Fix)
