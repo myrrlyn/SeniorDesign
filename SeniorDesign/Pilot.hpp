@@ -13,7 +13,7 @@ typedef enum : uint8_t {
 typedef struct {
 	uint8_t goal;
 	uint8_t speed;
-	volatile uint16_t* pin;
+	uint8_t pin;
 	pilot_motor_dir_t direction;
 	bool status;
 } pilot_motor_info_t;

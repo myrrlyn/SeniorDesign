@@ -37,27 +37,12 @@ void setup() {
 	nav.gps()->command(GPS_FIX_UPDATE_200);
 	nav.gps()->command(GPS_PRINT_200);
 
-	OCR3A = 0xAF;
-	// TIMSK3 |= _BV(OCIE3A);
-
 	nav.set_target(demo_coord);
 
-	// pilot.init();
-	// pilot.start();
-	// pilot.set_routine(move_forward);
-
-	delay(500);
-
-	// pilot.set_speed(255);
-
-	//  DEBUGGING USE: Enable A and B interrupts.
-	TIMSK1 |= _BV(OCIE1A);
-	TIMSK1 |= _BV(OCIE1B);
-	// TCCR1B = 0x15;
-	OCR1A = 0x0020;
-	OCR1B = 0x00F5;
-	//  This is SUPPOSED to generate a high-duty-cycle wave on 11 and a low-duty
-	//  -cycle wave on 12.
+	pilot.init();
+	pilot.start();
+	pilot.set_speed(64);
+	pilot.set_routine(move_forward);
 }
 
 bool flags[] = {
@@ -77,29 +62,32 @@ gps_coord_t dist;
 
 void loop() {
 	/*
-	if (false && millis() - interval_us > 500) {
-		us_scan_all();
+	us_scan_all();
+	if (millis() - interval_us > 500) {
+		// us_scan_all();
+		us_debug_all();
 		interval_us = millis();
 	}
+	*/
 	// pilot.debug();
-	if (false && millis() - interval_nav > 1000) {
+	/*
+	if (millis() - interval_nav > 1000) {
 		dist = nav.delta_to(demo_coord);
-		/*
 		Serial.print("Latitude difference:  ");
 		Serial.println(dist.latitude.i);
 		Serial.print("Longitude difference: ");
 		Serial.println(dist.longitude.i);
 		Serial.print("Bearing to target: ");
 		Serial.println(nav.angle_to(demo_heading));
-		*//*
 		nav.instruct_pilot();
 		nav.gps()->debug();
 		// nav.mag()->debug();
 		interval_nav = millis();
 	}
+	*/
 	//  This is a simple choreography script to demonstrate different pilot
 	//  control methods.
-	*//*
+	/*
 	if (flags[0] && (millis() - interval_actions > 0)) {
 		Serial.println("MOVING FORWARD");
 		pilot.full_stop();

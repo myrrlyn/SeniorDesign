@@ -7,26 +7,14 @@ Pilot::Pilot(pilot_motor_info_t* left, pilot_motor_info_t* right) {
 	this->left = left;
 	this->right = right;
 	running = false;
-	activity = move_forward;
+	activity = all_stop;
 }
 
 void Pilot::init() {
-	//  Set up Timer 1
-	//  See ATMega2560 datasheet, chapter 17
-	//  See doc/Pilot.md
-
-	TCCR1A = 0xA3;
-	TCCR1B = 0x11;
-	TCCR1C = 0x00;
-
-	//  OCR1A is set by the runtime
-	//  OCR1B is set by the runtime
-
-	//  ICR1 sets the maximum value to which the counter runs. For now, set it
-	//  to 0x00FF (255) so that the current API can remain unchanged.
-	ICR1 = 0x00FF;
-
-	TIMSK1 = 0x00;
+	//  Set up Timer 3
+	//  We are using this as a software timer to accelerate the motors
+	OCR3A = 0xAF;
+	TIMSK3 |= _BV(OCIE3A);
 }
 
 void Pilot::start() {
@@ -37,6 +25,8 @@ void Pilot::start() {
 
 void Pilot::set_speed(uint8_t speed) {
 	cruising_speed = speed;
+	left->goal = speed;
+	right->goal = speed;
 }
 
 void Pilot::set_routine(maneouvre_t routine) {
@@ -70,7 +60,7 @@ void Pilot::adjust(pilot_motor_info_t* m) {
 		else if (running && m->speed > m->goal) {
 			m->speed -= 1;
 		}
-		*(m->pin) = m->speed;
+		analogWrite(m->pin, m->speed);
 	}
 	else {
 		left->speed = 0;
@@ -80,9 +70,8 @@ void Pilot::adjust(pilot_motor_info_t* m) {
 		left->direction = motor_offline;
 		right->direction = motor_offline;
 		running = false;
-		*(left->pin) = left->speed;
-		*(right->pin) = right->speed;
-		// analogWrite(right->pin, right->speed);
+		analogWrite(10, 0);
+		analogWrite(11, 0);
 	}
 }
 
@@ -95,51 +84,35 @@ void Pilot::debug() {
 	Serial.println(right->speed);
 }
 
-uint16_t clock_left;
-uint16_t clock_right;
 pilot_motor_info_t ctl_left = {
 	.goal = 0,
 	.speed = 0,
-	.pin = &OCR1A,
+	.pin = 10,
 	.direction = motor_offline,
 	.status = false,
 };
 pilot_motor_info_t ctl_right = {
 	.goal = 0,
 	.speed = 0,
-	.pin = &OCR1B,
+	.pin = 11,
 	.direction = motor_offline,
 	.status = false,
 };
+
+uint16_t clock_l = 0;
+uint16_t clock_r = 0;
+
 Pilot pilot(&ctl_left, &ctl_right);
 
 SIGNAL(TIMER3_COMPA_vect) {
-	UDR0 = '3';
-	// ++clock_left;
-	// ++clock_right;
-	// if (clock_left > ctl_left.timer) {
-		// pilot.adjust(&ctl_left);
-		// clock_left = 0;
-	// }
-	// if (clock_right > ctl_right.timer) {
-		// pilot.adjust(&ctl_right);
-		// clock_right = 0;
-	// }
-}
-
-//  DEBUGGING
-uint8_t compa, compb;
-
-SIGNAL(TIMER1_COMPA_vect) {
-	++compa;
-	if (!compb) {
-		UDR0 = 'a';
+	++clock_l;
+	if (clock_l == 0x00FF) {
+		pilot.adjust(&ctl_left);
+		clock_l = 0x00;
 	}
-}
-
-SIGNAL(TIMER1_COMPB_vect) {
-	++compb;
-	if (!compb) {
-		UDR0 = 'b';
+	++clock_r;
+	if (clock_r == 0x00FF) {
+		pilot.adjust(&ctl_right);
+		clock_r = 0x00;
 	}
 }

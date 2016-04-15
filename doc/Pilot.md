@@ -112,3 +112,14 @@ interrupts, so the mask will be fully disabled.
 
 When an interrupt goes off, the matching flag in this register is also set. If
 we cared, we would write a logic 1 to the flag bit to clear it, but we don't.
+
+###### `DDRB`
+
+AVR architecture uses each pin for two functions: general- and special- purpose
+IO. We need to set the pins used by `OC1A` and `OC1B` to explicit output in
+order for the clocks to drive them, and we must take care to not use those pins
+directly in software. `OC1A` shares Pin 11 with `PB5`, and `OC1B` shares Pin 12
+with `PB6`. The `DDRB` register must have bits 5 and 6 set high; the rest should
+be left alone. The Arduino function `pinMode()` does this, but for consistency's
+sake I am using bit-level initialization for this as well as for the rest of the
+timer registers.
