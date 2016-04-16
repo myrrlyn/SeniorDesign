@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+IFS=$'\n\t\0'
+
+cd $HOME/Projects/SeniorDesign
+
+if [[ "$1" ]] ; then
+	BAUD="$1"
+else
+	BAUD=115200
+fi
+
+pio run -t upload
+
+pio serialports monitor -b $BAUD
