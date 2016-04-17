@@ -6,17 +6,21 @@ GPS::GPS(HardwareSerial* hwser) {
 	_hwser = hwser;
 }
 
+#ifdef AVR
 GPS::GPS(SoftwareSerial* swser) {
 	_swser = swser;
 }
+#endif
 
 gps_err_t GPS::begin(uint16_t baud) {
 	if (_hwser != NULL) {
 		_hwser->begin(baud);
 	}
+#ifdef AVR
 	else if (_swser != NULL) {
 		_swser->begin(baud);
 	}
+#endif
 	else {
 		return gps_err_nocomm;
 	}
@@ -67,9 +71,11 @@ gps_err_t GPS::command(const char* sentence) {
 	if (_hwser != NULL) {
 		_hwser->println(sentence);
 	}
+#ifdef AVR
 	else if (_swser != NULL) {
 		_swser->println(sentence);
 	}
+#endif
 	else {
 		return gps_err_nocomm;
 	}
@@ -182,9 +188,11 @@ char GPS::read() {
 	if (_hwser != NULL) {
 		c = _hwser->read();
 	}
+#ifdef AVR
 	else if (_swser != NULL) {
 		c = _swser->read();
 	}
+#endif
 	return c;
 }
 
