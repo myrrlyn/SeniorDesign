@@ -109,10 +109,12 @@ SIGNAL(TIMER3_COMPA_vect) {
 	if (clock_l == 0x00FF) {
 		pilot.adjust(&ctl_left);
 		clock_l = 0x00;
+		Serial.println(ctl_left.speed);
 	}
 	++clock_r;
 	if (clock_r == 0x00FF) {
 		pilot.adjust(&ctl_right);
 		clock_r = 0x00;
+		Serial.println(ctl_right.speed);
 	}
 }

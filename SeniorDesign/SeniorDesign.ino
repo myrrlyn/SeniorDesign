@@ -17,9 +17,14 @@ gps_coord_t active_target = {
 	.longitude = { .i = -85003530 },
 };
 
-gps_coord_t demo_coord = {
-	.latitude  = { .i = 41379015 },
-	.longitude = { .i = -85004300 },
+gps_coord_t demo_coord_0 = {
+	.latitude  = { .i = 41379125 },
+	.longitude = { .i = -85004200 },
+};
+
+gps_coord_t demo_coord_1 = {
+	.latitude  = { .i = 41378975 },
+	.longitude = { .i = -85004350 },
 };
 
 void setup() {
@@ -37,12 +42,14 @@ void setup() {
 	nav.gps()->command(GPS_FIX_UPDATE_200);
 	nav.gps()->command(GPS_PRINT_200);
 
-	nav.set_target(demo_coord);
+	// nav.set_target(demo_coord_0);
 
+/*
 	pilot.init();
 	pilot.start();
 	pilot.set_speed(64);
-	pilot.set_routine(move_forward);
+	pilot.set_routine(turn_right);
+*/
 }
 
 bool flags[] = {
@@ -60,9 +67,24 @@ uint32_t interval_nav = 0;
 uint32_t interval_actions = 0;
 gps_coord_t dist;
 
+bool am_there;
+
 void loop() {
+	if (millis() - interval_nav > 500) {
+		nav.gps()->debug();
+
+		am_there = nav.location_is_approximately(nav.get_target());
+		Serial.println(am_there ? "Hey you made it" : "Shit nigga keep goin'");
+		if (am_there) {
+			Serial.println("TARGETING NEXT IN SET");
+			nav.select_target_from_set();
+			Serial.println(nav.get_target().latitude.i);
+			Serial.println(nav.get_target().longitude.i);
+		}
+		interval_nav = millis();
+	}
+	// us_scan_all();
 	/*
-	us_scan_all();
 	if (millis() - interval_us > 500) {
 		// us_scan_all();
 		us_debug_all();

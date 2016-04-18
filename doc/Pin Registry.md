@@ -11,8 +11,8 @@ This lists each device and which pins it occupies.
 
 - Enable: 22
 - Fix Status: 23
-- Tx: 52 OR 18
-- Rx: 53 OR 19
+- Tx: 19
+- Rx: 18
 
 ### Ultrasonic Sensors
 
@@ -107,8 +107,8 @@ This lists each device and which pins it occupies.
 	D49 - Ultrasonic Sensor
 	D50
 	D51
-	D52 - GPS (Tx)
-	D53 - GPS (Rx)
+	D52
+	D53
 
 	A00
 	A01
@@ -129,6 +129,9 @@ This lists each device and which pins it occupies.
 	A15
 
 	IOREF
-	~RESET
+	~RESET - Run/Halt switch
 	VIN
+
 	AREF
+	SDA - I2C bus - Compass
+	SCL - I2C bus - Compass
