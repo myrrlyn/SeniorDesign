@@ -2,7 +2,7 @@
 #define __APPAYNE_SENIORDESIGN_GPS_H
 
 #include <HardwareSerial.h>
-#ifdef AVR
+#ifdef __AVR__
 #include <SoftwareSerial.h>
 #endif
 
@@ -111,7 +111,7 @@ typedef enum : uint8_t {
 class GPS {
 public:
 	GPS(HardwareSerial* hwser);
-#ifdef AVR
+#ifdef __AVR__
 	GPS(SoftwareSerial* swser);
 #endif
 	gps_err_t begin(uint16_t baud = 9600);
@@ -147,7 +147,7 @@ protected:
 	gps_err_t parse_double(double* store, char* fragment);
 private:
 	HardwareSerial* _hwser = NULL;
-#ifdef AVR
+#ifdef __AVR__
 	SoftwareSerial* _swser = NULL;
 #endif
 
