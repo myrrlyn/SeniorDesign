@@ -11,6 +11,6 @@ else
 	BAUD=115200
 fi
 
-pio run -t upload -e development
+pio run -t clean -e production
 
-pio serialports monitor -b $BAUD
+pio run -t upload -e production

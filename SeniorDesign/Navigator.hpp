@@ -3,9 +3,10 @@
 
 #include <GPS.hpp>
 #include <Magnetometer.hpp>
+#include <Utility.hpp>
 
 typedef enum : uint16_t {
-	//  330 (-30) to 30
+	//  330/-30 to 30
 	North = 0,
 	//  30 to 60
 	NorthEast = 45,
@@ -13,43 +14,68 @@ typedef enum : uint16_t {
 	East = 90,
 	//  120 to 150
 	SouthEast = 135,
-	//  150 to 210 (-150)
+	//  150 to 210/-150
 	South = 180,
-	//  210 (-150) to 240 (-120)
+	//  210/-150 to 240/-120
 	SouthWest = 225,
-	//  240 (-120) to 300 (-60)
+	//  240/-120 to 300/-60
 	West = 270,
-	//  300 (-60) to 330 (-30)
+	//  300/-60 to 330/-30
 	NorthWest = 315,
-} nav_angle_t;
+	//  Misc
+	ANY = 400,
+} nav_direction_t;
+
+//  Start_End_Direction
+typedef enum : uint8_t {
+	uc_fawick_east,
+	uc_fawick_south,
+	fawick_uc_north,
+	fawick_uc_west,
+	NOT_YET_ON_ROUTE,
+} nav_segment_t;
+
+typedef struct {
+	gps_coord_t* coord;
+	nav_direction_t inbound;
+	nav_direction_t outbound;
+	nav_segment_t current_segment;
+	nav_segment_t next_segment;
+} nav_waypoint_t;
 
 class Navigator {
 public:
 	Navigator(void);
-	gps_coord_t delta_to(gps_coord_t target);
-	double absolute_distance_to(gps_coord_t target);
-	double angle_to(double target);
-	double bearing_to(gps_coord_t target);
+	void init(void);
+	void navigate(void);
 
-	nav_angle_t approximate_heading(void);
-	bool location_is_approximately(gps_coord_t target);
+	bool approximately_at(gps_coord_t* goal);
+	float approximate_range(gps_coord_t* target);
+	nav_direction_t approximate_bearing(gps_coord_t* goal);
 
-	void set_target(gps_coord_t target);
-	gps_coord_t get_target(void);
-	void select_target_from_set(void);
+	void set_next_target(void);
 
 	void instruct_pilot(void);
 
 	GPS* gps(void);
 	Magnetometer* mag(void);
+
+#ifdef DEVEL
+	void debug(void);
+#endif
 private:
 	GPS _gps;
 	Magnetometer _mag;
-	gps_coord_t _target_destination;
-	double _target_heading;
-	bool at_endpoint;
-	bool going_east;
-	uint8_t current_target_index;
+	gpio_t _pin;
+
+	//  5V means FAWICK, 0V means UC
+	bool _pin_reading;
+
+	gps_coord_t _loc_now;
+	nav_waypoint_t* _state;
+	uint8_t _index;
+	nav_direction_t _heading;
+	bool am_pivoting;
 };
 
 extern Navigator nav;

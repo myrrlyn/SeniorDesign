@@ -88,7 +88,7 @@ typedef struct {
 } gps_time_t;
 
 typedef union {
-	double d;
+	float f;
 	int32_t i;
 } gps_coord_u;
 

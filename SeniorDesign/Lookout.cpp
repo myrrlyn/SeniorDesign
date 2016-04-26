@@ -66,7 +66,7 @@ void us_debug_all() {
 	Serial.println(buf_head.read_all('&') ? "Sensors clear" : "Sensors blocked");
 }
 
-void us_scan(uint8_t sensor, bool* avg, bool* imm) {
+void us_scan(uint8_t sensor, bool* imm) {
 	uint32_t distance = us_all[sensor]->measure();
 	if (distance < US_DISTANCE_MAX && distance > US_DISTANCE_MIN) {
 		*imm = false;
@@ -75,42 +75,38 @@ void us_scan(uint8_t sensor, bool* avg, bool* imm) {
 		*imm = true;
 	}
 	bufs_all[sensor]->write(*imm);
-	*avg = bufs_all[sensor]->read_all('+');
-	buf_head.write(*avg);
+	buf_head.write(bufs_all[sensor]->read_all('+'));
 #ifdef DEVEL
-	/*
+/*
 	Serial.print("Current sensor state: ");
 	Serial.println(*imm ? "Good" : "Bad");
 	Serial.print("Average sensor state: ");
 	Serial.println(*avg ? "GOOD" : "BAD");
 	Serial.print("Global sensor state: ");
 	Serial.println(buf_head.read_all('&') ? "RUNNING" : "STOPPED");
-	*/
+*/
 #endif
 }
 
 void us_scan_head() {
 	register bool immediate;
-	register bool average;
 	for (uint16_t idx = 0; idx < 6; ++idx) {
 		// us_debug(US_HEAD + idx);
-		us_scan(US_HEAD + idx, &average, &immediate);
+		us_scan(US_HEAD + idx, &immediate);
 	}
 	if (buf_head.read_all('&')) {
 		pilot.start();
-		pilot.set_speed(PILOT_SPEED);
 	}
 	else {
-		pilot.set_routine(all_stop);
+		pilot.halt();
 	}
 }
 
 void us_scan_tail() {
-	// register bool immediate;
-	// register bool average;
+	register bool immediate;
 	for (uint8_t idx = 0; idx < 6; ++idx) {
 		us_debug(US_TAIL + idx);
-		// us_scan(US_TAIL + idx, &average, &immediate);
+		us_scan(US_TAIL + idx, &immediate);
 	}
 }
 

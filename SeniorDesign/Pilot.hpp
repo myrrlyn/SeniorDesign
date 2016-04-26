@@ -21,8 +21,10 @@ typedef struct {
 typedef enum : uint8_t {
 	move_forward,
 	move_backwards,
-	turn_left,
-	turn_right,
+	bank_left,
+	bank_right,
+	pivot_left,
+	pivot_right,
 	all_stop,
 } maneouvre_t;
 
@@ -35,10 +37,16 @@ public:
 	Pilot(pilot_motor_info_t* left, pilot_motor_info_t* right);
 	void init(void);
 	void start(void);
+	void halt(void);
+	void restart(void);
 	void set_speed(uint8_t speed);
 	void set_routine(maneouvre_t routine);
 	// void set_heading(nav_angle_t new_heading);
+
+#ifdef DEVEL
 	void debug(void);
+#endif
+
 	void adjust(pilot_motor_info_t* m);
 private:
 	pilot_motor_info_t* left;
