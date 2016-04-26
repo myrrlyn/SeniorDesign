@@ -3,6 +3,8 @@
 
 #include <math.h>
 
+#define NAV_WAYPOINT_PRECISION 30.0
+
 gps_coord_t coords[] = {
 	//   0 - University Center
 	{
@@ -16,28 +18,28 @@ gps_coord_t coords[] = {
 	},
 	//   2 - Railroad tracks (DO NOT STOP HERE)
 	{
-		.latitude  = { .i = +41379640 },
-		.longitude = { .i = -85004256 },
+		.latitude  = { .i = +41379675 },
+		.longitude = { .i = -85004287 },
 	},
 	//   3 - Intersection with the Bock sidewalk
 	{
-		.latitude  = { .i = +41379659 },
+		.latitude  = { .i = +41379631 },
 		.longitude = { .i = -85004181 },
 	},
 	//   4 - Intersection with Best Hall sidewalk
 	{
-		.latitude  = { .i = +41379653 },
+		.latitude  = { .i = +41379630 },
 		.longitude = { .i = -85004037 },
 	},
-	//   5 - Waypoint on the main sidewalk
+	//   5 - Bock sidewalk again
 	{
-		.latitude  = { .i = +41379646 },
-		.longitude = { .i = -85004006 },
+		.latitude  = { .i = +41379628 },
+		.longitude = { .i = -85003880 },
 	},
 	//   6 - Lamppost on the main sidewalk
 	{
 		.latitude  = { .i = +41379640 },
-		.longitude = { .i = -85003906 },
+		.longitude = { .i = -85003918 },
 	},
 	//   7 - Waypoint on the main sidewalk
 	{
@@ -54,22 +56,22 @@ gps_coord_t coords[] = {
 		.latitude  = { .i = +41379640 },
 		.longitude = { .i = -85003706 },
 	},
-	//   7 - Midpoint on diagonal
+	//  10 - Midpoint on diagonal
 	{
-		.latitude  = { .i = +41379618 },
+		.latitude  = { .i = +41379610 },
 		.longitude = { .i = -85003662 },
 	},
-	//   8 - End of court
+	//  11 - End of court
 	{
-		.latitude  = { .i = +41379612 },
-		.longitude = { .i = -85003606 },
+		.latitude  = { .i = +41379590 },
+		.longitude = { .i = -85003590 },
 	},
-	//   9 - Firepit waypoint
+	//  12 - Firepit waypoint
 	{
-		.latitude  = { .i = +41379612 },
+		.latitude  = { .i = +41379600 },
 		.longitude = { .i = -85003512 },
 	},
-	//  10 - 90-degree turn for court
+	//  13 - 90-degree turn for court
 	//  --------------------------------
 	//  NOTE: THIS IS POTENTIAL ENDPOINT
 	//  --------------------------------
@@ -77,21 +79,23 @@ gps_coord_t coords[] = {
 		.latitude  = { .i = +41379612 },
 		.longitude = { .i = -85003425 },
 	},
-	//  11 - Bend in sidewalk
+/*
+	//  14 - Bend in sidewalk
 	{
 		.latitude  = { .i = +41379590 },
 		.longitude = { .i = -85003430 },
 	},
-	//  12 - Bend in sidewalk
+	//  15 - Bend in sidewalk
 	{
 		.latitude  = { .i = +41379540 },
 		.longitude = { .i = -85003420 },
 	},
-	//  13 - Fawick
+	//  16 - Fawick
 	{
 		.latitude  = { .i = +41379500 },
 		.longitude = { .i = -85003420 },
 	},
+*/
 };
 
 nav_waypoint_t path[] = {
@@ -101,14 +105,14 @@ nav_waypoint_t path[] = {
 	{
 		.coord = &coords[0],
 		.inbound = ANY,
-		.outbound = SouthEast,
+		.outbound = East,
 		.current_segment = NOT_YET_ON_ROUTE,
 		.next_segment = uc_fawick_east,
 	},
 	//   1 - Arrive at the sidewalk choke from UC
 	{
 		.coord = &coords[1],
-		.inbound = SouthEast,
+		.inbound = East,
 		.outbound = East,
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
@@ -130,7 +134,7 @@ nav_waypoint_t path[] = {
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
 	},
-	//   4
+	//   4 - Best Hall sidewalk
 	{
 		.coord = &coords[4],
 		.inbound = East,
@@ -138,7 +142,7 @@ nav_waypoint_t path[] = {
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
 	},
-	//   5
+	//   5 - Another Bock sidewalk
 	{
 		.coord = &coords[5],
 		.inbound = East,
@@ -146,39 +150,72 @@ nav_waypoint_t path[] = {
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
 	},
-	//   6 - Reach the end of the main sidewalk
+	//   6 - Lamppost
 	{
 		.coord = &coords[6],
+		.inbound = East,
+		.outbound = East,
+		.current_segment = uc_fawick_east,
+		.next_segment = uc_fawick_east,
+	},
+	//   7 - Midway along main run
+	{
+		.coord = &coords[7],
+		.inbound = East,
+		.outbound = East,
+		.current_segment = uc_fawick_east,
+		.next_segment = uc_fawick_east,
+	},
+	//   8 - Another Best Hall sidewalk
+	{
+		.coord = &coords[8],
+		.inbound = East,
+		.outbound = East,
+		.current_segment = uc_fawick_east,
+		.next_segment = uc_fawick_east,
+	},
+	//   9 - End of main sidewalk run; time to head SouthEast
+	{
+		.coord = &coords[9],
 		.inbound = East,
 		.outbound = SouthEast,
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
 	},
-	//   7 - Proceed SouthEast
+	//  10 - Midpoint on the SouthEast run (this coordinate should probably be
+	//  tweaked)
 	{
-		.coord = &coords[7],
+		.coord = &coords[10],
 		.inbound = SouthEast,
 		.outbound = SouthEast,
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
 	},
-	//   8 - Go SouthEast to the bottom of the court
+	//  11 - Bottom of the Centennial Courtyard
 	{
-		.coord = &coords[7],
-		.inbound = East,
-		.outbound = SouthEast,
-		.current_segment = uc_fawick_east,
-		.next_segment = uc_fawick_east,
-	},
-	//   9 - Go East to the firepit
-	{
-		.coord = &coords[8],
+		.coord = &coords[11],
 		.inbound = SouthEast,
 		.outbound = East,
 		.current_segment = uc_fawick_east,
 		.next_segment = uc_fawick_east,
 	},
-	//  10 - Reach the end of the court from the firepit
+	//  12 - East to Firepit
+	{
+		.coord = &coords[12],
+		.inbound = East,
+		.outbound = East,
+		.current_segment = uc_fawick_east,
+		.next_segment = uc_fawick_east,
+	},
+	//  13 - Fawick Terminus (fuck that pivot-right-and-sidewalk bullshit)
+	{
+		.coord = &coords[13],
+		.inbound = East,
+		.outbound = West,
+		.current_segment = uc_fawick_east,
+		.next_segment = fawick_uc_west,
+	},
+	//  14 - West to Firepit
 	//  ------------------------------------------------------------------
 	//  NOTE: WE ARE NOT MAKING THE TURN TO GO SOUTH TO FAWICK DOOR
 	//  THAT IS AN UNTENABLE NAVIGATION CHOICE AND WILL CAUSE ALL SORTS OF
@@ -188,14 +225,37 @@ nav_waypoint_t path[] = {
 	//  THROWN TO 'UC'
 	//  ------------------------------------------------------------------------
 	{
-		.coord = &coords[9],
-		.inbound = East,
+		.coord = &coords[12],
+		.inbound = West,
 		.outbound = West,
-		.current_segment = uc_fawick_east,
+		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  11 - We have executed a widdershins pivot at this time and are facing
-	//  west. We will now proceed to the firepit
+	//  15 - Reach the end of the court from the firepit
+	{
+		.coord = &coords[11],
+		.inbound = West,
+		.outbound = NorthWest,
+		.current_segment = fawick_uc_west,
+		.next_segment = fawick_uc_west,
+	},
+	//  16 - Diagonal midpoint
+	{
+		.coord = &coords[10],
+		.inbound = NorthWest,
+		.outbound = NorthWest,
+		.current_segment = fawick_uc_west,
+		.next_segment = fawick_uc_west,
+	},
+	//  17 - Reach the main sidewalk
+	{
+		.coord = &coords[9],
+		.inbound = NorthWest,
+		.outbound = West,
+		.current_segment = fawick_uc_west,
+		.next_segment = fawick_uc_west,
+	},
+	//  18 - Best Hall sidewalk
 	{
 		.coord = &coords[8],
 		.inbound = West,
@@ -203,23 +263,23 @@ nav_waypoint_t path[] = {
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  12 - Reach the end of the court from the firepit
+	//  19
 	{
 		.coord = &coords[7],
 		.inbound = West,
-		.outbound = NorthWest,
-		.current_segment = fawick_uc_west,
-		.next_segment = fawick_uc_west,
-	},
-	//  13 - Reach the main sidewalk choke
-	{
-		.coord = &coords[6],
-		.inbound = NorthWest,
 		.outbound = West,
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  14
+	//  20 - Lamppost
+	{
+		.coord = &coords[6],
+		.inbound = West,
+		.outbound = West,
+		.current_segment = fawick_uc_west,
+		.next_segment = fawick_uc_west,
+	},
+	//  21 - Bock sidewalk
 	{
 		.coord = &coords[5],
 		.inbound = West,
@@ -227,7 +287,7 @@ nav_waypoint_t path[] = {
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  15
+	//  22 - Another Best Hall sidewalk
 	{
 		.coord = &coords[4],
 		.inbound = West,
@@ -235,7 +295,7 @@ nav_waypoint_t path[] = {
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  16
+	//  23 - Another Bock sidewalk
 	{
 		.coord = &coords[3],
 		.inbound = West,
@@ -243,7 +303,7 @@ nav_waypoint_t path[] = {
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  17
+	//  24 - Railroad Tracks (still not a stop)
 	{
 		.coord = &coords[2],
 		.inbound = West,
@@ -251,23 +311,23 @@ nav_waypoint_t path[] = {
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  18
+	//  25 - Sidewalk waypoint
 	{
 		.coord = &coords[1],
 		.inbound = West,
-		.outbound = NorthWest,
+		.outbound = West,
 		.current_segment = fawick_uc_west,
 		.next_segment = fawick_uc_west,
 	},
-	//  19
+	//  26
 	//  ------------------------------------------------------------------------
 	//  NOTE: AT THIS TIME, NAVIGATION SHOULD PAUSE UNTIL THE SELECTOR SWITCH IS
 	//  THROWN TO 'FAWICK'
 	//  ------------------------------------------------------------------------
 	{
 		.coord = &coords[0],
-		.inbound = NorthWest,
-		.outbound = SouthEast,
+		.inbound = West,
+		.outbound = East,
 		.current_segment = fawick_uc_west,
 		.next_segment = uc_fawick_east,
 	},
@@ -293,10 +353,19 @@ void Navigator::init() {
 }
 
 void Navigator::navigate() {
+#ifndef DEVEL
+	//  If we don't have a valid fix, don't do anything.
+	if (_gps.fix_info() == gps_fix_invalid) {
+		pilot.halt();
+		return;
+	}
+#endif
+
 	//  Step 0: Determine what the switch says is the target.
 	_pin_reading = (bool)digitalRead(_pin);
 	//  Step 1: Determine where we are.
 	_loc_now = _gps.location();
+	_dir_now = _gps.velocity().heading;
 	//  Step 2: Determine if we have reached where we are going.
 	bool arrived = approximately_at(path[_index].coord);
 	//  Emergency condition: if we are still targeting the start, do nothing.

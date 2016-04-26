@@ -1,66 +1,134 @@
-# COORDINATES
+# Coordinates
 
-## Fawick Destination
+These are the list of GPS coordinates along the route we are running between the
+University Center and Fawick Hall.
 
-+4137 9500
--8500 3400
+Coordinates are formatted as follows
 
-## Turn 1
+`DD° MM mmmm H`
 
-+4137 9540
--8500 3420
+where DD is the degree, MM is the minute, and mmmm is the fractional minute. H
+is the hemisphere.
 
-## Turn 2
+1. **University Center Terminus**
 
-+4137 9590
--8500 3430
+    This is on the large block of sidewalk at the UC east entrance, by the north
+    handicap control button.
 
-## Turn 3
+    The robot MUST face down the sidewalk for the run to begin cleanly.
 
-+4137 9600
--8500 3430
+    41° 37 9700 N
+    85° 00 4493 W
 
-## Firepit
+2. **UC Sidewalk Choke**
 
-+4137 9600
--8500 3530
+    This is the junction between the main run of the sidewalk and where the UC
+    landing widens. The robot should hit this on the center line and continue to
+    the railroad tracks.
 
-## Turn 4
+    41° 37 9700 N
+    85° 00 4350 W
 
-+4137 9612
--8500 3650
+3. **Railroad Tracks**
 
-## Main Run
+    This waypoint is in the center of the railroad tracks. Obviously, if the
+    robot stops here, that is a less than ideal situation and should be
+    corrected as soon as possible.
 
-+4137 9656
--8500 3712
+    41° 37 9675 N
+    85° 00 4287 W
 
-## Marker 1
+4. **West Bock Intersection**
 
-+4137 9656
--8500 3818
+    Sidewalks from Bock intersect the main sidewalk thrice. This is the western
+    of the three intersections.
 
-## Marker 2
+    41° 37 9631 N
+    85° 00 4181 W
 
-+4137 9646
--8500 4025
+5. **West Best Intersection**
 
-## Marker 3
+    Best Hall also has two intersections with the main sidewalk. This is the
+    west.
 
-+4137 9640
--8500 4175
+    41° 37 9632 N
+    85° 00 4037 W
 
-## RAILROAD Tracks
+6. **Central Bock Intersection**
 
-+4137 9660  //  uhhhhhhh
--8500 4262
+    41° 37 9633 N
+    85° 00 3880 W
 
-## Turn 5
+7. **Lamppost**
 
-+4137 9670
--8500 4381
+    This is the only lamppost on the south side of the main sidewalk.
 
-## UC Destination
+    41° 37 9634 N
+    85° 00 3918 W
 
-+4137 9700
--8500 4520
+8. **East South Shoulder**
+
+    There are two concrete shoulders on the sidewalk. We do not navigate into
+    them, but they are useful landmarks. This is the eastern.
+
+    41° 37 9635 N
+    85° 00 3806 W
+
+9. **East Best Hall Intersection**
+
+    This is the eastern of the Best Hall sidewalk intersections.
+
+    41° 37 9636 N
+    85° 00 3762 W
+
+10. **Centennial Court Choke**
+
+    This is the junction between the main run of the sidewalk and the Centennial
+    courtyard.
+
+    41° 37 9637 N
+    85° 00 3706 W
+
+11. **East Bock Intersection**
+
+    This is the east-most spur sidewalk from Bock Hall.
+
+    41° 37 9610 N
+    85° 00 3662 W
+
+12. **SouthWest Corner of Courtyard**
+
+    This is the southwest corner of the Centennial courtyard.
+
+    41° 37 9590 N
+    85° 00 3590 W
+
+13. **Firepit**
+
+    This waypoint is on the south edge of the courtyard directly south of the
+    fire ring.
+
+    41° 37 9595 N
+    85° 00 3512 W
+
+14. **Fawick Hall Terminus**
+
+    We are not taking the Fawick sidewalk south to park directly at its door,
+    since that requires fine control in a GPS shadow and is something we do not
+    have the technical capacity to achieve. Instead, the route ends north of and
+    parallel to Fawick's east face.
+
+    41° 37 9600 N
+    85° 00 3425 W
+
+# Route
+
+The waypoints are indexed in route order. For the UC → Fawick leg, start at the
+UC and count up. For the Fawick → UC leg, start at Fawick and count down.
+
+The offset between the target coordinate and current location provides the
+range and bearing to travel.
+
+A single trip is defiend as UC → Fawick → UC. The robot will pause at Fawick and
+await instructions, and halt at UC. It will pivot at Fawick, but must be
+manually reset at the UC terminus.
