@@ -62,9 +62,11 @@ void us_debug(uint8_t num) {
 	Serial.println(" inches.");
 }
 
+#ifdef DEVEL
 void us_debug_all() {
 	Serial.println(buf_head.read_all('&') ? "Sensors clear" : "Sensors blocked");
 }
+#endif
 
 void us_scan(uint8_t sensor, bool* imm) {
 	uint32_t distance = us_all[sensor]->measure();
@@ -90,15 +92,14 @@ void us_scan(uint8_t sensor, bool* imm) {
 
 void us_scan_head() {
 	register bool immediate;
-	for (uint16_t idx = 0; idx < 6; ++idx) {
-		// us_debug(US_HEAD + idx);
+	for (uint8_t idx = 0; idx < 6; ++idx) {
 		us_scan(US_HEAD + idx, &immediate);
-	}
-	if (buf_head.read_all('&')) {
-		pilot.start();
-	}
-	else {
-		pilot.halt();
+		if (buf_head.read_all('&')) {
+			pilot.start();
+		}
+		else {
+			pilot.halt();
+		}
 	}
 }
 
@@ -112,5 +113,5 @@ void us_scan_tail() {
 
 void us_scan_all() {
 	us_scan_head();
-	// us_scan_tail();
+	us_scan_tail();
 }
