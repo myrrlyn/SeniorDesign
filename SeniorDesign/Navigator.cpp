@@ -334,13 +334,14 @@ nav_waypoint_t path[] = {
 };
 
 Navigator::Navigator() :
-	_gps(&Serial1),
+	_gps(&Serial3),
 	_mag(),
 	_pin{4} {
-	_state = &path[0];
 	_index = 0;
 	_heading = ANY;
 	am_pivoting = false;
+	needs_immediate_turn = false;
+	gps_msg_ready = false;
 }
 
 void Navigator::init() {
@@ -350,9 +351,29 @@ void Navigator::init() {
 	_gps.command(GPS_PRINT_200);
 	_mag.begin();
 	_mag.set_gain(mag_gain_1090);
+
+	//  WGM 4 (0b0100)
+	//  COM{ABC} 00
+	TCCR4A  = 0x01;
+	TCCR4B  = 0x03;
+	TCCR4C  = 0x00;
+	// ICR4    = ;
+	OCR4A   = 0x1000;
+	// OCR4B   = ;
+	// OCR4C   = ;
+	// TIMSK4 |= _BV(ICIE4);
+	TIMSK4 |= _BV(OCIE4A);
+	// TIMSK4 |= _BV(TOIE4);
 }
 
 void Navigator::navigate() {
+
+	//  Housekeeping - parse the latest sentence
+	if (gps_msg_ready) {
+		_gps.parse(_gps.latest_sentence());
+		gps_msg_ready = false;
+	}
+
 #ifndef DEVEL
 	//  If we don't have a valid fix, don't do anything.
 	if (_gps.fix_info() == gps_fix_invalid) {
@@ -388,125 +409,185 @@ void Navigator::navigate() {
 	//  Step 3: If we have reached the current goal, set a new goal.
 	if (arrived) {
 		set_next_target();
-		_heading = _state->outbound;
+		_heading = path[_index].outbound;
 	}
 	//  Step 4: Figure out how to approach the goal
-	//  Step 4.1: Figure out the goal's bearing from present location
-	nav_direction_t bearing = approximate_bearing(_state->coord);
-	//  Step 4.2: If the goal is clockwise of nominal direciton, bank right.
-	//  If the goal is counterclockwise of nominal direction, bank left.
-	//  If the goal is within the arc of nominal direction, go forward.
-	//
-	//  Oh, and, by the way, first check if we're at a terminus and ready to
-	//  depart, in which case we must PIVOT (not BANK) for a set amount of time
-	if (_pin_reading && (_index == 0)) {
-#ifdef DEVEL
-		Serial.println("PIVOTING TO FACE FAWICK");
-#endif
-		if (am_pivoting) {
-			pilot.set_routine(pivot_left);
-			//  PWM works even during delay
-			//  Tweak this magic number as we go
-			delay(5000);
-			pilot.set_routine(move_forward);
-			am_pivoting = false;
-		}
-	}
-	else if (!_pin_reading && (_index == 11)) {
-#ifdef DEVEL
-		Serial.println("PIVOTING TO FACE UC");
-#endif
-		if (am_pivoting) {
-			pilot.set_routine(pivot_left);
-			delay(5000);
-			pilot.set_routine(move_forward);
-			am_pivoting = false;
-		}
-	}
-	else if (_pin_reading && (_index == 4)) {
-		pilot.set_routine(bank_left);
-		delay(1000);
-	}
-	else if (path[_index].outbound == bearing) {
-		pilot.set_routine(move_forward);
-	}
-	else if ((path[_index].outbound < bearing)
-	|| (path[_index].outbound == NorthWest
-	&&  bearing == North)) {
-		pilot.set_routine(bank_right);
-	}
-	else if ((path[_index].outbound > bearing)
-	|| (path[_index].outbound == North
-	&&  bearing == NorthWest)) {
-		pilot.set_routine(bank_left);
-	}
+	instruct_pilot();
 }
 
+//  Finite State Machine dependent on current goal
 void Navigator::instruct_pilot() {
+	float heading = _gps.velocity().heading;
+	float bearing = real_bearing(path[_index].coord);
+	float angle_off = heading - bearing;
+	//  Edge cases: a far CCW heading - a far CW bearing will cause massive CW
+	//  angle_off values
+	//  Example: (350.0) - (5.0) = 345 degree turn CW, when it should be 15 CW
+	if (angle_off > 180.0) {
+		angle_off = 360.0 - angle_off;
+	}
+	//  Edge cases: a far CW heading - a far CCW bearing will cause massive CCW
+	//  angle_off values
+	//  Example: (5.0) - (350.0) = 345 degree turn CCW
+	gps_coord_t coord_off = real_range(path[_index].coord);
+	int32_t tmp;
 
+	switch (_index) {
+	//  This is only targeted while the robot is being moved into position.
+	//  The robot will not assist during this time.
+	case  0:
+#ifndef DEBUG
+		pilot.halt();
+		break;
+#endif
+	//  These are targeted during the course of normal operation.
+	//  The robot will attempt to use its location and heading values to steer
+	//  towards the point.
+
+	//  Heading east-ish from UC
+	//  Cases 1 - 3 are drifting slightly southeast
+	case  1:
+	case  2:
+	case  3:
+		//  Permit more latitude (heh) in North-checking
+		if ((coord_off.latitude.i < -30) || (angle_off > 10.0)) {
+			pilot.set_routine(bank_right);
+		}
+		else if((coord_off.latitude.i > 20) || (angle_off < -10.0)) {
+			pilot.set_routine(bank_left);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+		break;
+	//  Cases 4 - 9 run straight east
+	//  Case 4 requires bending port for a short time to execute the turn
+	case  4:
+		if (needs_immediate_turn) {
+			pilot.set_routine(bank_left);
+			delay(1000);
+			needs_immediate_turn = false;
+		}
+	//  Heading east along main sidewalk
+	case  5:
+	case  6:
+	case  7:
+	case  8:
+	case  9:
+	//  Heading east in courtyard
+	case 12:
+	case 13:
+		//  If too far North, OR aimed too far NorthEast, turn starboard
+		if ((coord_off.latitude.i < -10) || (angle_off < -10.0)) {
+			pilot.set_routine(bank_right);
+		}
+		//  If too far South, OR aimed too far SouthEast, turn port
+		else if ((coord_off.latitude.i > 10) || (angle_off > 15.0)) {
+			pilot.set_routine(bank_left);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+		break;
+	//  Heading SouthEast
+	case 10:
+	case 11:
+		//  Inspect bearing angles and lat/long RATIOS
+		//  This is harder. Basically, if we are more north than west, bank
+		//  right. If we are more west than north, bank left
+		tmp = coord_off.latitude.i - coord_off.longitude.i;
+		if ((tmp > 10) || (angle_off < -10.0)) {
+			pilot.set_routine(bank_right);
+		}
+		else if ((tmp < -10) || (angle_off > 10.0)) {
+			pilot.set_routine(bank_left);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+		break;
+	}
 }
 
 bool Navigator::approximately_at(gps_coord_t* goal) {
-	return approximate_range(goal) < 50.0;
+	return approximate_range(goal) < NAV_WAYPOINT_PRECISION;
 }
 
 float Navigator::approximate_range(gps_coord_t* target) {
-	gps_coord_t delta;
-	delta.latitude.f = (float)(target->latitude.i - _loc_now.latitude.i);
-	delta.longitude.f = (float)(target->longitude.i - _loc_now.longitude.i);
-	float dist = (delta.latitude.f * delta.latitude.f)
+	gps_coord_t delta = real_range(target);
+	delta.latitude.f  = (float)delta.latitude.i;
+	delta.longitude.f = (float)delta.longitude.i;
+	float dist = (delta.latitude.f  * delta.latitude.f)
 	           + (delta.longitude.f * delta.longitude.f);
 	return sqrt(dist);
 }
 
+gps_coord_t Navigator::real_range(gps_coord_t* target) {
+	gps_coord_t ret;
+	ret.latitude.i  = target->latitude.i  - _loc_now.latitude.i;
+	ret.longitude.i = target->longitude.i - _loc_now.longitude.i;
+	return ret;
+}
+
 nav_direction_t Navigator::approximate_bearing(gps_coord_t* goal) {
+	float angle = real_bearing(goal);
+	if (angle < 30.0) {
+		return North;
+	}
+	if (angle < 60.0) {
+		return NorthEast;
+	}
+	if (angle < 120.0) {
+		return East;
+	}
+	if (angle < 150.0) {
+		return SouthEast;
+	}
+	if (angle < 210.0) {
+		return South;
+	}
+	if (angle < 240.0) {
+		return SouthWest;
+	}
+	if (angle < 300.0) {
+		return West;
+	}
+	if (angle < 330.0) {
+		return NorthWest;
+	}
+	return North;
+}
+
+float Navigator::real_bearing(gps_coord_t* goal) {
 	gps_coord_t tmp;
 	tmp.latitude.f  = (float)(goal->latitude.i  - _loc_now.latitude.i);
 	tmp.longitude.f = (float)(goal->longitude.i - _loc_now.longitude.i);
 	//  tmp now stores the vector from _loc_now -->> goal
 	//  Find the navigational angle of that vector
-	float angle = atan2(tmp.longitude.f, tmp.latitude.f);
-	//  atan2 returns between -pi and +pi. Check return values against
-	//  direction borders (in radians).
-	if (angle < (-150.0 * M_PI / 180.0)) {
-		return South;
+	float ret = atan2(tmp.longitude.f, tmp.latitude.f);
+	//  Convert to degrees
+	ret *= (180.0 / M_PI);
+	//  Normalize from -180..180 to 0..360
+	if (ret < 0.0) {
+		ret += 360.0;
 	}
-	if (angle < (-120.0 * M_PI / 180.0)) {
-		return SouthWest;
-	}
-	if (angle < (-60.0 * M_PI / 180.0)) {
-		return West;
-	}
-	if (angle < (-30.0 * M_PI / 180.0)) {
-		return NorthWest;
-	}
-	if (angle < (30.0 * M_PI / 180.0)) {
-		return North;
-	}
-	if (angle < (60.0 * M_PI / 180.0)) {
-		return NorthEast;
-	}
-	if (angle < (120.0 * M_PI / 180.0)) {
-		return East;
-	}
-	if (angle < (150.0 * M_PI / 180.0)) {
-		return SouthEast;
-	}
-	return South;
+	return ret;
 }
 
 void Navigator::set_next_target() {
-	if ((_index == 19)
-	||  (_index == 0)) {
+	if ((_index == 13)
+	||  (_index == 26)) {
+		am_pivoting = true;
+	}
+	if ((_index == 4)) {
+		needs_immediate_turn = true;
+	}
+	if (_index == 26) {
 		_index = 1;
 	}
 	else {
 		++_index;
 	}
-	if (_index == 11 || _index == 19) {
-		am_pivoting = true;
-	}
-	_state = &path[_index];
 }
 
 GPS* Navigator::gps() {
@@ -515,6 +596,10 @@ GPS* Navigator::gps() {
 
 Magnetometer* Navigator::mag() {
 	return &_mag;
+}
+
+void Navigator::gps_msg_recv() {
+	gps_msg_ready = true;
 }
 
 #ifdef DEVEL
@@ -530,26 +615,17 @@ void Navigator::debug() {
 	Serial.println(approximate_range(path[_index].coord));
 	Serial.println(approximate_bearing(path[_index].coord));
 	Serial.println("True offset:");
-	Serial.println(path[_index].coord->latitude.i - _loc_now.latitude.i);
-	Serial.println(path[_index].coord->longitude.i - _loc_now.longitude.i);
+	Serial.println(real_range(path[_index].coord).latitude.i);
+	Serial.println(real_range(path[_index].coord).longitude.i);
 	Serial.println();
 }
 #endif
 
 Navigator nav;
 
-//  Library-provided callback attached to Serial1 RX
-void serialEvent1() {
+SIGNAL(TIMER4_COMPA_vect) {
 	gps_err_t err = nav.gps()->store_stream();
-	//  This isn't an interrupt function, it's a callback executed in the
-	//  foreground of the main-while loop on the same level as loop()
-	//  As such, we are not really under a time constraint here vs doing
-	//  the parsing in loop(). Separation of concerns thus says to keep this
-	//  in here, out of loop()'s view.
 	if (err == gps_msg_ready) {
-#ifdef DEVEL
-		// Serial.println(nav.gps()->latest_sentence());
-#endif
-		nav.gps()->parse(nav.gps()->latest_sentence());
+		nav.gps_msg_recv();
 	}
 }

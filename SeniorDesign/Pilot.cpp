@@ -43,21 +43,25 @@ void Pilot::set_speed(uint8_t speed) {
 void Pilot::set_routine(maneouvre_t routine) {
 	activity = routine;
 	switch (routine) {
-		case move_backwards:
+		case ahead_full:
+			left->speed = cruising_speed;
+			right->speed = cruising_speed;
 		case move_forward:
+			left->goal = cruising_speed;
+			right->goal = cruising_speed;
 			left->status = true;
 			right->status = true;
 			break;
 		//  Do not accelerate when banking; just jump speeds immediately.
 		case bank_left:
-			left->goal = (cruising_speed >> 2) * 3;
+			left->goal = (cruising_speed * 4) / 5;
 			right->goal = cruising_speed;
 			left->speed = left->goal;
 			right->speed = right->goal;
 			break;
 		case bank_right:
 			left->goal = cruising_speed;
-			right->goal = (cruising_speed >> 2) * 3;
+			right->goal = (cruising_speed * 4) / 5;
 			left->speed = left->goal;
 			right->speed = right->goal;
 			break;
@@ -101,7 +105,7 @@ void Pilot::debug() {
 	Serial.println(pilot.running ? "Ready" : "Blocked");
 	Serial.print("Activity: ");
 	switch (activity) {
-		case move_backwards:
+		case ahead_full:
 		case move_forward:
 			Serial.println("MOVING FORWARD");
 			break;

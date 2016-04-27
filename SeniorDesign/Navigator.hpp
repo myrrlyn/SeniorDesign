@@ -51,7 +51,9 @@ public:
 
 	bool approximately_at(gps_coord_t* goal);
 	float approximate_range(gps_coord_t* target);
+	gps_coord_t real_range(gps_coord_t* target);
 	nav_direction_t approximate_bearing(gps_coord_t* goal);
+	float real_bearing(gps_coord_t* goal);
 
 	void set_next_target(void);
 
@@ -59,6 +61,8 @@ public:
 
 	GPS* gps(void);
 	Magnetometer* mag(void);
+
+	inline void gps_msg_recv(void);
 
 #ifdef DEVEL
 	void debug(void);
@@ -72,10 +76,13 @@ private:
 	bool _pin_reading;
 
 	gps_coord_t _loc_now;
-	nav_waypoint_t* _state;
+	float _dir_now;
 	uint8_t _index;
 	nav_direction_t _heading;
 	bool am_pivoting;
+	bool needs_immediate_turn;
+
+	bool gps_msg_ready;
 };
 
 extern Navigator nav;

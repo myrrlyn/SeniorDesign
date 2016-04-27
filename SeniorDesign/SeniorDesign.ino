@@ -12,6 +12,7 @@
 #include "Navigator.hpp"
 #include "Pilot.hpp"
 
+/*
 bool flags[] = {
 	false,
 	false,
@@ -19,12 +20,9 @@ bool flags[] = {
 	false,
 	false,
 };
+*/
 
-uint32_t interval_us = 0;
-uint32_t interval_nav = 0;
-uint32_t interval_actions = 0;
-uint32_t interval_pilot = 0;
-gps_coord_t dist;
+uint32_t interval_debug = 0;
 
 void setup() {
 	Serial.begin(115200);
@@ -38,9 +36,9 @@ void setup() {
 	pilot.init();
 	pilot.start();
 #ifdef DEVEL
-	pilot.set_speed(64 * 2);
+	pilot.set_speed(64 * 3);
 #else
-	pilot.set_speed(64 * 2);
+	pilot.set_speed(64 * 3);
 #endif
 #ifdef DEVEL
 	// flags[0] = true;
@@ -50,35 +48,17 @@ void setup() {
 #undef DEMO_CONTROL
 
 void loop() {
-	// us_scan_all();
+	us_scan_head();
 	nav.navigate();
 #ifdef DEVEL
-	if (millis() - interval_nav > 1000) {
+	if (millis() - interval_debug > 1000) {
+		us_debug_all();
 		nav.debug();
 		pilot.debug();
-		interval_nav = millis();
-	}
-	if (millis() - interval_us > 500) {
-		// us_debug_all();
-		interval_us = millis();
+		interval_debug = millis();
 	}
 #endif
-	/*
-	if (millis() - interval_nav > 1000) {
-		dist = nav.delta_to(demo_coord);
-		Serial.print("Latitude difference:  ");
-		Serial.println(dist.latitude.i);
-		Serial.print("Longitude difference: ");
-		Serial.println(dist.longitude.i);
-		Serial.print("Bearing to target: ");
-		Serial.println(nav.angle_to(demo_heading));
-		nav.instruct_pilot();
-		nav.gps()->debug();
-		// nav.mag()->debug();
-		interval_nav = millis();
-	}
-	*/
-	/*
+/*
 #ifdef DEVEL
 #ifdef DEMO_CONTROL
 	//  This is a simple choreography script to demonstrate different pilot
@@ -123,5 +103,5 @@ void loop() {
 	}
 #endif//DEMO_CONTROL
 #endif//DEVEL
-	*/
+*/
 }
