@@ -5,11 +5,14 @@
 
 #define US_HEAD 0
 #define US_TAIL 6
+#define US_ALL 12
 
 //  Magic numbers setting the critical range of the sensors. Values inside this
 //  range indicate an obstruction.
 #define US_DISTANCE_MAX 5000
 #define US_DISTANCE_MIN  500
+#define US_DISTANCE_MAX_IN 72
+#define US_DISTANCE_MIN_IN  8
 #define PILOT_SPEED (64 * 3)
 
 Ultrasonic us00({ .tx = 24, .rx = 25 });
@@ -52,6 +55,7 @@ RingBuffer_us* bufs_all[] = {
 
 RingBuffer_us buf_head(true);
 
+#ifdef DEVEL
 void us_debug(uint8_t num) {
 	Serial.print("Sensor #");
 	Serial.print(num + 1);
@@ -62,7 +66,6 @@ void us_debug(uint8_t num) {
 	Serial.println(" inches.");
 }
 
-#ifdef DEVEL
 void us_debug_all() {
 	Serial.println(buf_head.read_all('&') ? "Sensors clear" : "Sensors blocked");
 }
@@ -79,36 +82,33 @@ void us_scan(uint8_t sensor, bool* imm) {
 	bufs_all[sensor]->write(*imm);
 	buf_head.write(bufs_all[sensor]->read_all('+'));
 #ifdef DEVEL
-/*
-	Serial.print("Current sensor state: ");
-	Serial.println(*imm ? "Good" : "Bad");
-	Serial.print("Average sensor state: ");
-	Serial.println(*avg ? "GOOD" : "BAD");
-	Serial.print("Global sensor state: ");
-	Serial.println(buf_head.read_all('&') ? "RUNNING" : "STOPPED");
-*/
+	// us_debug(sensor);
 #endif
 }
 
+uint8_t head_tracker = 0;
+
 void us_scan_head() {
 	register bool immediate;
-	for (uint8_t idx = 0; idx < 6; ++idx) {
-		us_scan(US_HEAD + idx, &immediate);
-		if (buf_head.read_all('&')) {
-			pilot.start();
-		}
-		else {
-			pilot.halt();
-		}
+	us_scan(US_HEAD + head_tracker, &immediate);
+	if (buf_head.read_all('&')) {
+		pilot.start();
 	}
+	else {
+		pilot.halt();
+	}
+	++head_tracker;
+	head_tracker %= US_TAIL;
 }
+
+uint8_t tail_tracker = 0;
 
 void us_scan_tail() {
 	register bool immediate;
-	for (uint8_t idx = 0; idx < 6; ++idx) {
-		us_debug(US_TAIL + idx);
-		us_scan(US_TAIL + idx, &immediate);
-	}
+	// us_debug(US_TAIL + tail_tracker);
+	us_scan(US_TAIL + tail_tracker, &immediate);
+	++tail_tracker;
+	tail_tracker %= (US_ALL - US_TAIL);
 }
 
 void us_scan_all() {
