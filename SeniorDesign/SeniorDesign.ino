@@ -36,9 +36,9 @@ void setup() {
 	pilot.init();
 	pilot.start();
 #ifdef DEVEL
-	pilot.set_speed(64 * 3);
+	pilot.set_speed(255);
 #else
-	pilot.set_speed(64 * 3);
+	pilot.set_speed(255);
 #endif
 #ifdef DEVEL
 	// flags[0] = true;

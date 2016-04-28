@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 
-#define PILOT_ACCEL_CLOCK 0x0008
+#define PILOT_ACCEL_CLOCK 0x0010
 
 Pilot::Pilot(pilot_motor_info_t* left, pilot_motor_info_t* right) {
 	this->left = left;
