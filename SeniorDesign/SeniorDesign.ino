@@ -12,17 +12,9 @@
 #include "Navigator.hpp"
 #include "Pilot.hpp"
 
-/*
-bool flags[] = {
-	false,
-	false,
-	false,
-	false,
-	false,
-};
-*/
-
 uint32_t interval_debug = 0;
+uint32_t interval_actions = 0;
+uint8_t demo_stage = 0;
 
 void setup() {
 	Serial.begin(115200);
@@ -35,19 +27,13 @@ void setup() {
 
 	pilot.init();
 	pilot.start();
-#ifdef DEVEL
 	pilot.set_speed(255);
-#else
-	pilot.set_speed(255);
-#endif
-#ifdef DEVEL
-	// flags[0] = true;
-#endif
 }
 
-#undef DEMO_CONTROL
+#define DEMO_CONTROL
 
 void loop() {
+/*
 	us_scan_head();
 	nav.navigate();
 #ifdef DEVEL
@@ -58,50 +44,63 @@ void loop() {
 		interval_debug = millis();
 	}
 #endif
-/*
+*/
 #ifdef DEVEL
 #ifdef DEMO_CONTROL
+	us_scan_head();
+	if (millis() - interval_debug > 1000) {
+		Serial.println();
+		us_debug_all();
+		pilot.debug();
+		interval_debug = millis();
+	}
 	//  This is a simple choreography script to demonstrate different pilot
 	//  control methods.
-	if (flags[0] && (millis() - interval_actions > 0)) {
-		Serial.println("MOVING FORWARD");
-		pilot.set_routine(move_forward);
-		flags[0] = false;
-		flags[1] = true;
-	}
-	else if (flags[1] && (millis() - interval_actions > 20000)) {
+	if (millis() - interval_actions > 20000) {
 		Serial.println();
-		Serial.println("TURNING LEFT");
+		switch (demo_stage) {
+			case 0:
+				Serial.println("MOVING FORWARD");
+				pilot.set_routine(move_forward);
+				break;
+			case 1:
+				Serial.println("BANKING LEFT...");
+				pilot.set_routine(bank_left);
+				break;
+			case 2:
+				Serial.println("MOVING FORWARD");
+				pilot.set_routine(ahead_full);
+				break;
+			case 3:
+				Serial.println("BANKING RIGHT...");
+				pilot.set_routine(bank_left);
+				break;
+			case 4:
+				Serial.println("MOVING FORWARD");
+				pilot.set_routine(ahead_full);
+				break;
+			case 5:
+				Serial.println("PIVOTING LEFT...");
+				pilot.set_routine(pivot_left);
+				break;
+			case 6:
+				Serial.println("ACCELERATING FORWARD");
+				pilot.set_routine(move_forward);
+				break;
+			case 7:
+				Serial.println("PIVOTING RIGHT...");
+				pilot.set_routine(pivot_right);
+				break;
+			case 8:
+				Serial.println("HALTING");
+				pilot.set_routine(all_stop);
+				break;
+		}
 		Serial.println();
-		pilot.set_routine(turn_left);
-		flags[1] = false;
-		flags[2] = true;
-	}
-	else if (flags[2] && (millis() - interval_actions > 40000)) {
-		Serial.println();
-		Serial.println("MOVING FORWARD");
-		Serial.println();
-		pilot.set_routine(move_forward);
-		flags[2] = false;
-		flags[3] = true;
-	}
-	else if (flags[3] && (millis() - interval_actions > 60000)) {
-		Serial.println();
-		Serial.println("TURNING RIGHT");
-		Serial.println();
-		pilot.set_routine(turn_right);
-		flags[3] = false;
-		flags[4] = true;
-	}
-	else if (flags[4] && (millis() - interval_actions > 80000)) {
+		++demo_stage;
+		demo_stage %= 9;
 		interval_actions = millis();
-		flags[0] = true;
-		flags[1] = false;
-		flags[2] = false;
-		flags[3] = false;
-		flags[4] = false;
 	}
 #endif//DEMO_CONTROL
 #endif//DEVEL
-*/
 }

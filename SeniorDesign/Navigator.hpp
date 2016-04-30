@@ -82,7 +82,7 @@ private:
 	bool am_pivoting;
 	bool needs_immediate_turn;
 
-	bool gps_msg_ready;
+	volatile bool gps_msg_ready;
 };
 
 extern Navigator nav;

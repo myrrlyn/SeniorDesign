@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 
-#define PILOT_ACCEL_CLOCK 0x0010
+#define PILOT_ACCEL_CLOCK 0x0018
 
 Pilot::Pilot(pilot_motor_info_t* left, pilot_motor_info_t* right) {
 	this->left = left;
@@ -25,9 +25,12 @@ void Pilot::start() {
 
 void Pilot::halt() {
 	running = false;
+	left->speed = 0;
+	right->speed = 0;
 }
 
 void Pilot::restart() {
+	running = true;
 	left->speed = 0;
 	right->speed = 0;
 	analogWrite(10, 0);
@@ -56,14 +59,14 @@ void Pilot::set_routine(maneouvre_t routine) {
 		case bank_left:
 			left->goal = (cruising_speed * 4) / 5;
 			right->goal = cruising_speed;
-			left->speed = left->goal;
-			right->speed = right->goal;
+			// left->speed = left->goal;
+			// right->speed = right->goal;
 			break;
 		case bank_right:
 			left->goal = cruising_speed;
 			right->goal = (cruising_speed * 4) / 5;
-			left->speed = left->goal;
-			right->speed = right->goal;
+			// left->speed = left->goal;
+			// right->speed = right->goal;
 			break;
 		//  When pivoting, clamp the relevant motor to 0.
 		//  Take care to ensure that the clamped motor accelerates rather than
@@ -85,11 +88,27 @@ void Pilot::set_routine(maneouvre_t routine) {
 
 void Pilot::adjust(pilot_motor_info_t* m) {
 	if (running && m->status) {
-		if (m->speed < m->goal) {
-			++(m->speed);
-		}
-		else if (m->speed > m->goal) {
-			--(m->speed);
+		switch (activity) {
+			case move_forward:
+				if (m->speed < m->goal) {
+					++(m->speed);
+				}
+				else if (m->speed > m->goal) {
+					--(m->speed);
+				}
+				break;
+			case ahead_full:
+				m->speed = cruising_speed;
+				break;
+			case bank_left:
+			case bank_right:
+			case pivot_left:
+			case pivot_right:
+				m->speed = m->goal;
+				break;
+			case all_stop:
+				m->speed = 0;
+				break;
 		}
 	}
 	else {
