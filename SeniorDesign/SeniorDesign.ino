@@ -30,10 +30,7 @@ void setup() {
 	pilot.set_speed(255);
 }
 
-#define DEMO_CONTROL
-
 void loop() {
-/*
 	us_scan_head();
 	nav.navigate();
 #ifdef DEVEL
@@ -44,7 +41,9 @@ void loop() {
 		interval_debug = millis();
 	}
 #endif
-*/
+
+
+//  This was our code for Expo Day
 #ifdef DEVEL
 #ifdef DEMO_CONTROL
 	us_scan_head();
