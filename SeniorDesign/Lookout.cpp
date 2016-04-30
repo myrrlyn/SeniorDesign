@@ -82,7 +82,9 @@ void us_scan(uint8_t sensor, bool* imm) {
 	bufs_all[sensor]->write(*imm);
 	buf_head.write(bufs_all[sensor]->read_all('+'));
 #ifdef DEVEL
-	// us_debug(sensor);
+#ifdef DEMO_CONTROL
+	us_debug(sensor);
+#endif
 #endif
 }
 

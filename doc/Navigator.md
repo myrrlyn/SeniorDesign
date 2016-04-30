@@ -29,17 +29,72 @@ earth's magnetic field and determine the direction the vehicle is facing, which
 allows the Navigator to make informed decisions and correct the Pilot if the
 vehicle drifts off course.
 
-## Other Modules
+Due to magnetic noise from the motors, even under Faraday shielding, we are not
+using the magnetometer at this time. As such, heading information is derived
+solely from the GPS. This is somewhat problematic at low speed, as the GPS
+signal bounces.
 
-The Navigator writes to the Pilot, and is read by the scheduler.
+### Switch
 
-## Methods
+The Navigator uses a switch on pin 4 to determine which terminus to target. A
+5V signal indicates Fawick Hall; a 0V signal indicates University Center.
+
+This switch should only be adjusted at a terminus, as the route tracking is a
+full loop (UC&rarr;Fawick&rarr;UC), not a single bidirectional path.
+
+## Software
+
+Navigator is a singleton class that owns a GPS and magnetometer, and traces the
+robot's position along the route. It communicates with the Pilot to implement
+course decisions. It does not need to communicate with the Lookout, as our route
+does not have any segments requiring specific sensors to be ignored.
+
+`Navigator.hpp` defines a single Navigator instance.
 
 ```cpp
-	gps_coord_t distance_to(gps_coord_t target);
+extern Navigator nav;
+```
+
+This is the only instance that should ever be used in this project. Initialize
+it in `setup()` and navigate with it in `loop()`.
+
+##### Constructor
+
+```cpp
+Navigator::Navigator(void);
+```
+
+Constructs a Navigator module instance. This also constructs the GPS and
+Magnetometer drivers, which should be known only to the Navigator.
+
+```cpp
+void Navigator::init(void);
+```
+
+This initializes the Navigator instance. Call it once in `setup()` to initialize
+the GPS and Magnetometer instances for continuous use.
+
+```cpp
+void Navigator::navigate(void);
+```
+
+This is the `loop()` API. It handles all the navigation calculations, including
+updating state and communicating with the Pilot to move towards waypoints.
+
+It should only be called once in a `loop()` iteration. GPS signals only come in
+every 200ms, so there is no reason to call it multiply in a loop. As long as the
+`loop()` can be guaranteed to run in 100ms or less, the Navigator will function
+properly.
+
+```cpp
+gps_coord_t Navigator::distance_to(gps_coord_t target);
 ```
 
 This method takes a target coordinate and the current location, and computes
 the distance between them. It returns this as a lat/long struct. Positive values
 indicate that the target is north or east of the current location; negative
 values indicate that the target is south or west.
+
+### Other Modules
+
+The Navigator writes to the Pilot, and is read by the scheduler.
