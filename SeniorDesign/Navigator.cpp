@@ -446,16 +446,18 @@ void Navigator::instruct_pilot() {
 	//  The robot will attempt to use its location and heading values to steer
 	//  towards the point.
 
+	//  FALLTHROUGHS ARE INTENTIONAL
+
 	//  Heading east-ish from UC
 	//  Cases 1 - 3 are drifting slightly southeast
 	case  1:
 	case  2:
 	case  3:
 		//  Permit more latitude (heh) in North-checking
-		if ((coord_off.latitude.i < -30) || (angle_off > 10.0)) {
+		if ((coord_off.latitude.i > 30) || (angle_off > 10.0)) {
 			pilot.set_routine(bank_right);
 		}
-		else if((coord_off.latitude.i > 20) || (angle_off < -10.0)) {
+		else if((coord_off.latitude.i < -20) || (angle_off < -10.0)) {
 			pilot.set_routine(bank_left);
 		}
 		else {
@@ -466,8 +468,9 @@ void Navigator::instruct_pilot() {
 	//  Case 4 requires bending port for a short time to execute the turn
 	case  4:
 		if (needs_immediate_turn) {
-			pilot.set_routine(bank_left);
-			delay(1000);
+			pilot.set_routine(pivot_left);
+			delay(500);
+			pilot.set_routine(ahead_full);
 			needs_immediate_turn = false;
 		}
 	//  Heading east along main sidewalk
@@ -476,15 +479,10 @@ void Navigator::instruct_pilot() {
 	case  7:
 	case  8:
 	case  9:
-	//  Heading east in courtyard
-	case 12:
-	case 13:
-		//  If too far North, OR aimed too far NorthEast, turn starboard
-		if ((coord_off.latitude.i < -10) || (angle_off < -10.0)) {
+		if ((coord_off.latitude.i > 20) || (angle_off > 10.0)) {
 			pilot.set_routine(bank_right);
 		}
-		//  If too far South, OR aimed too far SouthEast, turn port
-		else if ((coord_off.latitude.i > 10) || (angle_off > 15.0)) {
+		else if ((coord_off.latitude.i < -20) || (angle_off < -10.0)) {
 			pilot.set_routine(bank_left);
 		}
 		else {
@@ -492,16 +490,51 @@ void Navigator::instruct_pilot() {
 		}
 		break;
 	//  Heading SouthEast
+	//  Case 10 requires bending starboard for a short time to execute the turn
 	case 10:
+		if (needs_immediate_turn) {
+			pilot.set_routine(pivot_right);
+			delay(1000);
+			pilot.set_routine(ahead_full);
+			needs_immediate_turn = false;
+		}
 	case 11:
 		//  Inspect bearing angles and lat/long RATIOS
 		//  This is harder. Basically, if we are more north than west, bank
 		//  right. If we are more west than north, bank left
+		if (coord_off.latitude.i < 0) {
+			coord_off.latitude.i *= -1;
+		}
+		if (coord_off.longitude.i < 0) {
+			coord_off.longitude.i *= -1;
+		}
 		tmp = coord_off.latitude.i - coord_off.longitude.i;
-		if ((tmp > 10) || (angle_off < -10.0)) {
+		if ((tmp > 10) || (angle_off < -15.0)) {
 			pilot.set_routine(bank_right);
 		}
-		else if ((tmp < -10) || (angle_off > 10.0)) {
+		else if ((tmp < -10) || (angle_off > 15.0)) {
+			pilot.set_routine(bank_left);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+		break;
+	//  Heading east in courtyard
+	//  Case 12 requires bending port for a short time to execute the turn
+	case 12:
+		if (needs_immediate_turn) {
+			pilot.set_routine(pivot_left);
+			delay(1000);
+			pilot.set_routine(ahead_full);
+			needs_immediate_turn = false;
+		}
+	case 13:
+		//  If too far North, OR aimed too far NorthEast, turn starboard
+		if ((coord_off.latitude.i > 10) || (angle_off < -10.0)) {
+			pilot.set_routine(bank_right);
+		}
+		//  If too far South, OR aimed too far SouthEast, turn port
+		else if ((coord_off.latitude.i < -10) || (angle_off > 15.0)) {
 			pilot.set_routine(bank_left);
 		}
 		else {
