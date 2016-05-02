@@ -7,7 +7,7 @@ class Ultrasonic {
 public:
 	Ultrasonic(iopair_t pins);
 	uint32_t measure(void);
-	uint8_t measure_inches(void);
+	uint32_t measure_inches(void);
 	void status(bool status);
 	bool status(void);
 private:

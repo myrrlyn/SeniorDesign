@@ -27,7 +27,7 @@ uint32_t Ultrasonic::measure() {
 	}
 }
 
-uint8_t Ultrasonic::measure_inches() {
+uint32_t Ultrasonic::measure_inches() {
 	uint32_t raw = measure();
 	// return raw / ULTRASONIC_MAGIC_INCH;
 	//  The magic number, it turns out, can be reasonably simulated with 128
