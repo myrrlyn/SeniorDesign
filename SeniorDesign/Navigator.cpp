@@ -394,6 +394,7 @@ void Navigator::navigate() {
 	if (!arrived && path[_index].current_segment == NOT_YET_ON_ROUTE) {
 		return;
 	}
+/*
 	//  Emergency condition: if we are at the terminus to which the selector is
 	//  set, DO NOTHING
 	//  If switch says FAWICK and we're at FAWICK, or if switch says UC and
@@ -406,6 +407,7 @@ void Navigator::navigate() {
 	else {
 		pilot.start();
 	}
+*/
 	//  Step 3: If we have reached the current goal, set a new goal.
 	if (arrived) {
 		set_next_target();
