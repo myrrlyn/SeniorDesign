@@ -610,18 +610,25 @@ float Navigator::real_bearing(gps_coord_t* goal) {
 }
 
 void Navigator::set_next_target() {
-	if ((_index == 13)
-	||  (_index == 26)) {
-		am_pivoting = true;
-	}
-	if ((_index == 4)) {
-		needs_immediate_turn = true;
-	}
+	//  Select the next target in the list, wrapping from 26 to 0
 	if (_index == 26) {
 		_index = 1;
 	}
 	else {
 		++_index;
+	}
+	if (_index == 1) {
+		pilot.start();
+	}
+	//  Set any flags needed by the new destination
+	if ((_index == 14)
+	||  (_index == 26)) {
+		am_pivoting = true;
+	}
+	if ((_index == 4)
+	||  (_index == 10)
+	||  (_index == 12)) {
+		needs_immediate_turn = true;
 	}
 }
 
