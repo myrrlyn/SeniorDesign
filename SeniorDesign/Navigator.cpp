@@ -623,7 +623,7 @@ void Navigator::debug() {
 
 Navigator nav;
 
-SIGNAL(TIMER4_COMPA_vect) {
+ISR(TIMER4_COMPA_vect) {
 	gps_err_t err = nav.gps()->store_stream();
 	if (err == gps_msg_ready) {
 		nav.gps_msg_recv();
