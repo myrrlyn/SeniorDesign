@@ -394,20 +394,18 @@ void Navigator::navigate() {
 	if (!arrived && path[_index].current_segment == NOT_YET_ON_ROUTE) {
 		return;
 	}
-/*
 	//  Emergency condition: if we are at the terminus to which the selector is
 	//  set, DO NOTHING
 	//  If switch says FAWICK and we're at FAWICK, or if switch says UC and
 	//  we're at UC, halt.
+	//  If we've returned to the UC and completed a trip, halt.
 	if ((_pin_reading && (_index == 11))
-	|| (!_pin_reading && (_index == 0))) {
+	|| (!_pin_reading && (_index == 0))
+	||  (_index == 26)) {
 		pilot.halt();
 		return;
 	}
-	else {
-		pilot.start();
-	}
-*/
+	//  The Lookout will permit us to start back up if the above is satisfied.
 	//  Step 3: If we have reached the current goal, set a new goal.
 	if (arrived) {
 		set_next_target();
@@ -432,16 +430,14 @@ void Navigator::instruct_pilot() {
 	//  angle_off values
 	//  Example: (5.0) - (350.0) = 345 degree turn CCW
 	gps_coord_t coord_off = real_range(path[_index].coord);
-	int32_t tmp;
+	float tmp;
 
 	switch (_index) {
 	//  This is only targeted while the robot is being moved into position.
 	//  The robot will not assist during this time.
 	case  0:
-#ifndef DEBUG
 		pilot.halt();
 		break;
-#endif
 	//  These are targeted during the course of normal operation.
 	//  The robot will attempt to use its location and heading values to steer
 	//  towards the point.
@@ -454,10 +450,10 @@ void Navigator::instruct_pilot() {
 	case  2:
 	case  3:
 		//  Permit more latitude (heh) in North-checking
-		if ((coord_off.latitude.i > 30) || (angle_off > 10.0)) {
+		if ((coord_off.latitude.i < -30) || (angle_off > 10.0)) {
 			pilot.set_routine(bank_right);
 		}
-		else if((coord_off.latitude.i < -20) || (angle_off < -10.0)) {
+		else if((coord_off.latitude.i > 20) || (angle_off < -10.0)) {
 			pilot.set_routine(bank_left);
 		}
 		else {
@@ -479,10 +475,10 @@ void Navigator::instruct_pilot() {
 	case  7:
 	case  8:
 	case  9:
-		if ((coord_off.latitude.i > 20) || (angle_off > 10.0)) {
+		if ((coord_off.latitude.i < -20) || (angle_off > 10.0)) {
 			pilot.set_routine(bank_right);
 		}
-		else if ((coord_off.latitude.i < -20) || (angle_off < -10.0)) {
+		else if ((coord_off.latitude.i > 20) || (angle_off < -10.0)) {
 			pilot.set_routine(bank_left);
 		}
 		else {
@@ -500,23 +496,43 @@ void Navigator::instruct_pilot() {
 		}
 	case 11:
 		//  Inspect bearing angles and lat/long RATIOS
-		//  This is harder. Basically, if we are more north than west, bank
-		//  right. If we are more west than north, bank left
-		if (coord_off.latitude.i < 0) {
-			coord_off.latitude.i *= -1;
+		//  Both latitude AND longitude come into play here.
+		//  We want to be North (negative ΔLat) && West (positive ΔLng).
+		//  If we are South (postive ΔLat) ^ East (negative ΔLng), something is
+		//  wrong and we can correct with only one check. If we are South &&
+		//  East, something is EXTRA wrong, and we must immediately target the
+		//  next point
+
+		//  First up, check N && W
+		if ((coord_off.latitude.i < 0) && (coord_off.longitude.i > 0)) {
+			tmp = (float)(coord_off.latitude.i)
+			    / (float)(coord_off.longitude.i);
+			//  If we are NNW, turn starboard.
+			if (tmp < -1.5) {
+				pilot.set_routine(bank_right);
+			}
+			//  If we are WNW, turn port.
+			else if (tmp > -0.67) {
+				pilot.set_routine(bank_left);
+			}
+			//  If we are  NW, go straight.
+			else {
+				pilot.set_routine(ahead_full);
+			}
 		}
-		if (coord_off.longitude.i < 0) {
-			coord_off.longitude.i *= -1;
-		}
-		tmp = coord_off.latitude.i - coord_off.longitude.i;
-		if ((tmp > 10) || (angle_off < -15.0)) {
+		//  Check N && E
+		else if ((coord_off.latitude.i < 0) && (coord_off.longitude.i < 0)) {
 			pilot.set_routine(bank_right);
 		}
-		else if ((tmp < -10) || (angle_off > 15.0)) {
+		//  Check S && W
+		else if ((coord_off.latitude.i > 0) && (coord_off.longitude.i > 0)) {
 			pilot.set_routine(bank_left);
 		}
-		else {
-			pilot.set_routine(ahead_full);
+		//  Check S && E
+		else if ((coord_off.latitude.i > 0) && (coord_off.longitude.i < 0)) {
+			++_index;
+			//  panic and go north (port)
+			pilot.set_routine(bank_left);
 		}
 		break;
 	//  Heading east in courtyard
@@ -530,17 +546,135 @@ void Navigator::instruct_pilot() {
 		}
 	case 13:
 		//  If too far North, OR aimed too far NorthEast, turn starboard
-		if ((coord_off.latitude.i > 10) || (angle_off < -10.0)) {
+		if ((coord_off.latitude.i < -10) || (angle_off > 15.0)) {
 			pilot.set_routine(bank_right);
 		}
 		//  If too far South, OR aimed too far SouthEast, turn port
-		else if ((coord_off.latitude.i < -10) || (angle_off > 15.0)) {
+		else if ((coord_off.latitude.i > 5) || (angle_off < -10.0)) {
 			pilot.set_routine(bank_left);
 		}
 		else {
 			pilot.set_routine(ahead_full);
 		}
 		break;
+	//  PIVOT FIRST then head to firepit
+	case 14:
+		if (am_pivoting) {
+			pilot.set_routine(pivot_left);
+			delay(5000);
+			pilot.set_routine(ahead_full);
+			am_pivoting = false;
+		}
+	case 15:
+		//  If too far North, OR aimed too far NorthWest, turn port
+		if ((coord_off.latitude.i < -10) || (angle_off < -15.0)) {
+			pilot.set_routine(bank_left);
+		}
+		//  If too far South, OR aimed too far SouthWest, turn starboard
+		else if ((coord_off.latitude.i > 5) || (angle_off > 10.0)) {
+			pilot.set_routine(bank_right);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+	//  Bank starboard (NorthWest)
+	case 16:
+		if (needs_immediate_turn) {
+			pilot.set_routine(pivot_right);
+			delay(1000);
+			pilot.set_routine(ahead_full);
+			needs_immediate_turn = false;
+		}
+	case 17:
+		//  Inspect bearing angles and lat/long RATIOS
+		//  Both latitude AND longitude come into play here.
+		//  We want to be South (positive ΔLat) && East (negative ΔLng).
+		//  If we are North (negative ΔLat) ^ West (positive ΔLng), something is
+		//  wrong and we can correct with only one check. If we are North &&
+		//  West, something is EXTRA wrong and we must immediately target the
+		//  next point
+
+		//  First up, check on S && E
+		if ((coord_off.latitude.i > 0) && (coord_off.longitude.i < 0)) {
+			tmp = (float)(coord_off.latitude.i)
+			    / (float)(coord_off.longitude.i);
+			//  If we are ESE, turn port.
+			if (tmp > -0.67) {
+				pilot.set_routine(bank_left);
+			}
+			//  If we are SSE, turn starboard.
+			else if (tmp < -1.5) {
+				pilot.set_routine(bank_right);
+			}
+			//  If we are  SE, go straight.
+			else {
+				pilot.set_routine(ahead_full);
+			}
+		}
+		//  Check N && E
+		else if ((coord_off.latitude.i < 0) && (coord_off.longitude.i < 0)) {
+			pilot.set_routine(bank_left);
+		}
+		//  Check S && W
+		else if ((coord_off.latitude.i > 0) && (coord_off.longitude.i > 0)) {
+			pilot.set_routine(bank_right);
+		}
+		//  Check N && W
+		else if ((coord_off.latitude.i < 0) && (coord_off.longitude.i > 0)) {
+			++_index;
+			//  panic and go north (starboard)
+			pilot.set_routine(bank_right);
+		}
+		break;
+	//  Bank port (West)
+	case 18:
+		if (needs_immediate_turn) {
+			pilot.set_routine(pivot_left);
+			delay(1000);
+			pilot.set_routine(ahead_full);
+			needs_immediate_turn = false;
+		}
+	case 19:
+	case 20:
+	case 21:
+	case 22:
+	case 23:
+		//  Turn port if North or CW, starboard if South or CCW
+		if ((coord_off.latitude.i < -10) || (angle_off < -15.0)) {
+			pilot.set_routine(bank_left);
+		}
+		else if ((coord_off.latitude.i > 10) || (angle_off > 15.0)) {
+			pilot.set_routine(bank_right);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+		break;
+	//  Bank starboard (Slightly NorthWest)
+	case 24:
+		if (needs_immediate_turn) {
+			pilot.set_routine(pivot_right);
+			delay(500);
+			pilot.set_routine(ahead_full);
+			needs_immediate_turn = false;
+		}
+	case 25:
+	case 26:
+		//  Permit more latitude (heh) in North-checking
+		if ((coord_off.latitude.i > 30) || (angle_off > 10.0)) {
+			pilot.set_routine(bank_right);
+		}
+		else if((coord_off.latitude.i < -20) || (angle_off < -10.0)) {
+			pilot.set_routine(bank_left);
+		}
+		else {
+			pilot.set_routine(ahead_full);
+		}
+		break;
+	//  I don't even know what to do for error condition. Panic and target 0?
+	default:
+		_index = 0;
+		pilot.halt();
 	}
 }
 
@@ -594,25 +728,27 @@ nav_direction_t Navigator::approximate_bearing(gps_coord_t* goal) {
 }
 
 float Navigator::real_bearing(gps_coord_t* goal) {
-	gps_coord_t tmp;
-	tmp.latitude.f  = (float)(goal->latitude.i  - _loc_now.latitude.i);
-	tmp.longitude.f = (float)(goal->longitude.i - _loc_now.longitude.i);
+	gps_coord_t tmp = real_range(goal);
+	tmp.latitude.f  = (float)(tmp.latitude.i);
+	tmp.longitude.f = (float)(tmp.longitude.i);
 	//  tmp now stores the vector from _loc_now -->> goal
 	//  Find the navigational angle of that vector
 	float ret = atan2(tmp.longitude.f, tmp.latitude.f);
 	//  Convert to degrees
 	ret *= (180.0 / M_PI);
 	//  Normalize from -180..180 to 0..360
-	if (ret < 0.0) {
-		ret += 360.0;
-	}
+	//  Just kidding DON'T DO THAT
+	//  Positive angles mean turn starboard
+	//  Negative angles mean turn port
+	// if (ret < 0.0) {
+	// 	ret += 360.0;
+	// }
 	return ret;
 }
 
 void Navigator::set_next_target() {
-	//  Select the next target in the list, wrapping from 26 to 0
 	if (_index == 26) {
-		_index = 1;
+		pilot.halt();
 	}
 	else {
 		++_index;
@@ -621,13 +757,15 @@ void Navigator::set_next_target() {
 		pilot.start();
 	}
 	//  Set any flags needed by the new destination
-	if ((_index == 14)
-	||  (_index == 26)) {
+	if (_index == 14) {
 		am_pivoting = true;
 	}
 	if ((_index == 4)
 	||  (_index == 10)
-	||  (_index == 12)) {
+	||  (_index == 12)
+	||  (_index == 16)
+	||  (_index == 18)
+	||  (_index == 24)) {
 		needs_immediate_turn = true;
 	}
 }
