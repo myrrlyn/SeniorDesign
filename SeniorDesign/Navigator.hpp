@@ -50,8 +50,8 @@ public:
 	void navigate(void);
 
 	bool approximately_at(gps_coord_t* goal);
-	float approximate_range(gps_coord_t* target);
-	gps_coord_t real_range(gps_coord_t* target);
+	float approximate_range(gps_coord_t* goal);
+	gps_coord_t real_range(gps_coord_t* goal);
 	nav_direction_t approximate_bearing(gps_coord_t* goal);
 	float real_bearing(gps_coord_t* goal);
 

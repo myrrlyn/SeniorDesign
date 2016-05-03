@@ -710,8 +710,8 @@ bool Navigator::approximately_at(gps_coord_t* goal) {
 	return approximate_range(goal) < NAV_WAYPOINT_PRECISION;
 }
 
-float Navigator::approximate_range(gps_coord_t* target) {
-	gps_coord_t delta = real_range(target);
+float Navigator::approximate_range(gps_coord_t* goal) {
+	gps_coord_t delta = real_range(goal);
 	delta.latitude.f  = (float)delta.latitude.i;
 	delta.longitude.f = (float)delta.longitude.i;
 	float dist = (delta.latitude.f  * delta.latitude.f)
@@ -719,10 +719,10 @@ float Navigator::approximate_range(gps_coord_t* target) {
 	return sqrt(dist);
 }
 
-gps_coord_t Navigator::real_range(gps_coord_t* target) {
+gps_coord_t Navigator::real_range(gps_coord_t* goal) {
 	gps_coord_t ret;
-	ret.latitude.i  = target->latitude.i  - _loc_now.latitude.i;
-	ret.longitude.i = target->longitude.i - _loc_now.longitude.i;
+	ret.latitude.i  = goal->latitude.i  - _loc_now.latitude.i;
+	ret.longitude.i = goal->longitude.i - _loc_now.longitude.i;
 	return ret;
 }
 
