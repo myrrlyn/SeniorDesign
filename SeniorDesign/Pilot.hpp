@@ -4,10 +4,10 @@
 #include <stdint.h>
 #include "Navigator.hpp"
 
-typedef enum : uint8_t {
-	motor_forward,
-	motor_reverse,
-	motor_offline,
+typedef enum : int8_t {
+	motor_reverse = -1,
+	motor_offline =  0,
+	motor_forward =  1,
 } pilot_motor_dir_t;
 
 typedef struct {

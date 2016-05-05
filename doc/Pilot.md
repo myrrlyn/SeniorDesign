@@ -123,3 +123,131 @@ with `PB6`. The `DDRB` register must have bits 5 and 6 set high; the rest should
 be left alone. The Arduino function `pinMode()` does this, but for consistency's
 sake I am using bit-level initialization for this as well as for the rest of the
 timer registers.
+
+### Notes on Timer Usage
+
+I couldn't get that to work, so, I used Timer 3 as a software counter and the
+onboard PWM functionality from the Arduino framework to drive the motors. The
+annoying motor scream is still there. Oh well.
+
+### API
+
+#### Public Types
+
+##### Motor Direction
+
+```cpp
+enum : int8_t {
+    motor_reverse = -1,
+    motor_offline =  0,
+    motor_forward =  1,
+} pilot_motor_dir_t;
+```
+
+This stores the motor direction values. As I don't have bidirectional control,
+this is largely unused, and mostly serves as a default off state for the motors.
+
+##### Motor Information
+
+```cpp
+struct {
+    uint8_t goal;
+    uint8_t speed;
+    uint8_t pin;
+    pilot_motor_dir_t direction;
+    bool status;
+} pilot_motor_info_t;
+```
+
+This allows each motor to retain its own state, including target and actual
+speed, which pin it is on, whether it should run or halt, and direction it is
+going. Direction is unused. The status flag is used to pause and then resume the
+motors, together or individually.
+
+##### Maneuvers
+
+```cpp
+enum : uint8_t {
+    move_forward,
+    bank_left,
+    bank_right,
+    pivot_left,
+    pivot_right,
+    ahead_full,
+    all_stop,
+} maneouvre_t;
+```
+
+This is the list of maneuvers the robot is capable of performing. Move forward
+accelerates; Ahead Full jumps to full speed immediately. The banks turn under
+way, while the pivots halt their respective wheel.
+
+#### Methods
+
+##### Constructor
+
+```cpp
+Pilot::Pilot(pilot_motor_info_t* left, pilot_motor_info_t* right);
+```
+
+Initializes the Pilot with data structures describing two motors.
+
+##### Initializer
+
+```cpp
+void Pilot::init(void);
+```
+
+Set up the timer for motor adjustment. Call in `setup()`.
+
+##### Motors On
+
+```cpp
+void Pilot::start(void);
+```
+
+Permits the motors to run. This is called by the Lookout when the way ahead is
+clear.
+
+##### Motors Off
+
+```cpp
+void Pilot::halt(void);
+```
+
+Shuts the motors down. This is called by the Lookout when the way is blocked,
+and by the Navigator when the route is complete.
+
+##### Motor Restart
+
+```cpp
+void Pilot::restart(void);
+```
+
+This sets both motor speeds to 0 but permits them to run.
+
+##### Set Cruising Speed
+
+```cpp
+void Pilot::set_speed(uint8_t speed);
+```
+
+This is used to set the nominal max speed of the motors. This should be called
+once, in `setup()`, and with a number determined through experiment.
+
+##### Set Maneuver
+
+```cpp
+void Pilot::set_routine(maneouvre_t routine);
+```
+
+This is used to perform various actions. The Navigator calls it to steer.
+
+##### Adjust Motor
+
+```cpp
+void Pilot::adjust(pilot_motor_info_t* m);
+```
+
+This is called by the timer to accelerate or jump the motors as the maneuver
+dictates.
