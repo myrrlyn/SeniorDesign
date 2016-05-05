@@ -9,7 +9,7 @@
 
 //  Magic numbers setting the critical range of the sensors. Values inside this
 //  range indicate an obstruction.
-#define US_DISTANCE_MAX 6000
+#define US_DISTANCE_MAX 5500
 #define US_DISTANCE_MIN  500
 #define US_DISTANCE_MAX_IN 72
 #define US_DISTANCE_MIN_IN  8

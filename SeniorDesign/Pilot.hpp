@@ -49,7 +49,8 @@ public:
 private:
 	pilot_motor_info_t* left;
 	pilot_motor_info_t* right;
-	uint8_t cruising_speed = 0;
+	uint8_t cruising_speed_l = 0;
+	uint8_t cruising_speed_r = 0;
 	bool running;
 	maneouvre_t activity;
 };

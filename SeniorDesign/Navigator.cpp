@@ -8,76 +8,76 @@
 gps_coord_t coords[] = {
 	//   0 - University Center
 	{
-		.latitude  = { .i = +41379700 },
-		.longitude = { .i = -85004493 },
+		.latitude  = { .i = +41379680 },
+		.longitude = { .i = -85004450 },
 	},
 	//   1 - Last waypoint on the sidewalk
 	{
-		.latitude  = { .i = +41379684 },
-		.longitude = { .i = -85004350 },
+		.latitude  = { .i = +41379670 },
+		.longitude = { .i = -85004375 },
 	},
 	//   2 - Railroad tracks (DO NOT STOP HERE)
 	{
-		.latitude  = { .i = +41379675 },
-		.longitude = { .i = -85004287 },
+		.latitude  = { .i = +41379640 },
+		.longitude = { .i = -85004290 },
 	},
 	//   3 - Intersection with the Bock sidewalk
 	{
-		.latitude  = { .i = +41379631 },
-		.longitude = { .i = -85004181 },
+		.latitude  = { .i = +41379645 },
+		.longitude = { .i = -85004160 },
 	},
 	//   4 - Intersection with Best Hall sidewalk
 	{
-		.latitude  = { .i = +41379630 },
-		.longitude = { .i = -85004037 },
+		.latitude  = { .i = +41379655 },
+		.longitude = { .i = -85004040 },
 	},
 	//   5 - Bock sidewalk again
 	{
-		.latitude  = { .i = +41379628 },
-		.longitude = { .i = -85003880 },
+		.latitude  = { .i = +41379655 },
+		.longitude = { .i = -85003980 },
 	},
 	//   6 - Lamppost on the main sidewalk
 	{
-		.latitude  = { .i = +41379640 },
-		.longitude = { .i = -85003918 },
+		.latitude  = { .i = +41379650 },
+		.longitude = { .i = -85003860 },
 	},
 	//   7 - Waypoint on the main sidewalk
 	{
-		.latitude  = { .i = +41379634 },
-		.longitude = { .i = -85003806 },
+		.latitude  = { .i = +41379645 },
+		.longitude = { .i = -85003780 },
 	},
 	//   8 - Best Hall sidewalk junction
 	{
 		.latitude  = { .i = +41379640 },
-		.longitude = { .i = -85003762 },
+		.longitude = { .i = -85003720 },
 	},
 	//   9 - Main sidewalk terminus
 	{
 		.latitude  = { .i = +41379640 },
-		.longitude = { .i = -85003706 },
+		.longitude = { .i = -85003650 },
 	},
 	//  10 - Midpoint on diagonal
 	{
-		.latitude  = { .i = +41379610 },
-		.longitude = { .i = -85003662 },
+		.latitude  = { .i = +41379615 },
+		.longitude = { .i = -85003600 },
 	},
 	//  11 - End of court
 	{
-		.latitude  = { .i = +41379590 },
-		.longitude = { .i = -85003590 },
+		.latitude  = { .i = +41379580 },
+		.longitude = { .i = -85003540 },
 	},
 	//  12 - Firepit waypoint
 	{
-		.latitude  = { .i = +41379600 },
-		.longitude = { .i = -85003512 },
+		.latitude  = { .i = +41379595 },
+		.longitude = { .i = -85003480 },
 	},
 	//  13 - 90-degree turn for court
 	//  --------------------------------
 	//  NOTE: THIS IS POTENTIAL ENDPOINT
 	//  --------------------------------
 	{
-		.latitude  = { .i = +41379612 },
-		.longitude = { .i = -85003425 },
+		.latitude  = { .i = +41379600 },
+		.longitude = { .i = -85003400 },
 	},
 /*
 	//  14 - Bend in sidewalk
@@ -352,6 +352,8 @@ void Navigator::init() {
 	_mag.begin();
 	_mag.set_gain(mag_gain_1090);
 
+	pinMode(7, INPUT);
+
 	//  WGM 4 (0b0100)
 	//  COM{ABC} 00
 	TCCR4A  = 0x01;
@@ -366,7 +368,25 @@ void Navigator::init() {
 	// TIMSK4 |= _BV(TOIE4);
 }
 
+bool manual_flag;
+
+uint32_t nav_clock = 0;
+
 void Navigator::navigate() {
+
+	//  GPS sentences arrive every 200ms. There is absolutely no reason to run
+	//  the navigator routine as often as possible, as this will just result in
+	//  recomputation of the same data, giving the same result, and these
+	//  computations are (a) expensive and (b) difficult to memoize in our
+	//  constraints.
+	//  This will abort the navigation routine if it has been run in the past
+	//  100ms. The shorter window allows us to guarantee that a new GPS sentence
+	//  will ALWAYS be parsed within a short time of its arrival.
+	if (millis() - nav_clock < 100) {
+		return;
+	}
+
+	nav_clock = millis();
 
 	//  Housekeeping - parse the latest sentence
 	if (gps_msg_ready) {
@@ -381,6 +401,14 @@ void Navigator::navigate() {
 		return;
 	}
 #endif
+
+	if (digitalRead(7) && !manual_flag) {
+		manual_flag = true;
+	}
+	if (!digitalRead(7) && manual_flag) {
+		manual_flag = false;
+		set_next_target();
+	}
 
 	//  Step 0: Determine what the switch says is the target.
 	_pin_reading = (bool)digitalRead(_pin);
@@ -399,7 +427,7 @@ void Navigator::navigate() {
 	//  If switch says FAWICK and we're at FAWICK, or if switch says UC and
 	//  we're at UC, halt.
 	//  If we've returned to the UC and completed a trip, halt.
-	if ((_pin_reading && (_index == 11))
+	if ((_pin_reading && (_index == 14))
 	|| (!_pin_reading && (_index == 0))
 	||  (_index == 26)) {
 		pilot.halt();
@@ -766,7 +794,7 @@ void Navigator::set_next_target() {
 	||  (_index == 16)
 	||  (_index == 18)
 	||  (_index == 24)) {
-		needs_immediate_turn = true;
+		// needs_immediate_turn = true;
 	}
 }
 

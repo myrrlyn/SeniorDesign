@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 
-#define PILOT_ACCEL_CLOCK 0x0018
+#define PILOT_ACCEL_CLOCK 0x0028
 
 Pilot::Pilot(pilot_motor_info_t* left, pilot_motor_info_t* right) {
 	this->left = left;
@@ -38,7 +38,8 @@ void Pilot::restart() {
 }
 
 void Pilot::set_speed(uint8_t speed) {
-	cruising_speed = speed;
+	cruising_speed_l = speed;
+	cruising_speed_r = speed * 0.85;
 	left->goal = speed;
 	right->goal = speed;
 }
@@ -47,26 +48,30 @@ void Pilot::set_routine(maneouvre_t routine) {
 	activity = routine;
 	switch (routine) {
 		case ahead_full:
-			left->speed = cruising_speed;
-			right->speed = cruising_speed;
+			left->speed = cruising_speed_l;
+			right->speed = cruising_speed_r;
 		case move_forward:
-			left->goal = cruising_speed;
-			right->goal = cruising_speed;
+			left->goal = cruising_speed_l;
+			right->goal = cruising_speed_r;
 			left->status = true;
 			right->status = true;
 			break;
 		//  Do not accelerate when banking; just jump speeds immediately.
 		case bank_left:
-			left->goal = (cruising_speed * 4) / 5;
-			right->goal = cruising_speed;
-			// left->speed = left->goal;
-			// right->speed = right->goal;
+			left->goal = (cruising_speed_l * 3) / 4;
+			right->goal = cruising_speed_r;
+			left->speed = left->goal;
+			right->speed = right->goal;
+			left->status = true;
+			right->status = true;
 			break;
 		case bank_right:
-			left->goal = cruising_speed;
-			right->goal = (cruising_speed * 4) / 5;
-			// left->speed = left->goal;
-			// right->speed = right->goal;
+			left->goal = cruising_speed_l;
+			right->goal = (cruising_speed_r * 3) / 4;
+			left->speed = left->goal;
+			right->speed = right->goal;
+			left->status = true;
+			right->status = true;
 			break;
 		//  When pivoting, clamp the relevant motor to 0.
 		//  Take care to ensure that the clamped motor accelerates rather than
@@ -98,8 +103,6 @@ void Pilot::adjust(pilot_motor_info_t* m) {
 				}
 				break;
 			case ahead_full:
-				m->speed = cruising_speed;
-				break;
 			case bank_left:
 			case bank_right:
 			case pivot_left:

@@ -27,7 +27,7 @@ void setup() {
 
 	pilot.init();
 	pilot.start();
-	pilot.set_speed(255);
+	pilot.set_speed(255 / 5 * 4);
 }
 
 void loop() {
@@ -41,7 +41,6 @@ void loop() {
 		interval_debug = millis();
 	}
 #endif
-
 
 //  This was our code for Expo Day
 #ifdef DEVEL
@@ -72,7 +71,7 @@ void loop() {
 				break;
 			case 3:
 				Serial.println("BANKING RIGHT...");
-				pilot.set_routine(bank_left);
+				pilot.set_routine(bank_right);
 				break;
 			case 4:
 				Serial.println("MOVING FORWARD");
